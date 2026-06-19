@@ -57,6 +57,22 @@ fun NavGraph(navController: NavHostController) {
         }
 
         composable(
+            route = "movie_form?movieId={movieId}",
+            arguments = listOf(navArgument("movieId") { type = NavType.StringType; nullable = true })
+        ) { backStackEntry ->
+            val movieId = backStackEntry.arguments?.getString("movieId")
+            MovieFormScreen(navController = navController, movieId = movieId)
+        }
+
+        composable(
+            route = "cinema_form?cinemaId={cinemaId}",
+            arguments = listOf(navArgument("cinemaId") { type = NavType.StringType; nullable = true })
+        ) { backStackEntry ->
+            val cinemaId = backStackEntry.arguments?.getString("cinemaId")
+            CinemaFormScreen(navController = navController, cinemaId = cinemaId)
+        }
+
+        composable(
             route = Screen.MovieDetail.route,
             arguments = listOf(navArgument("movieId") { type = NavType.StringType })
         ) { backStackEntry ->
@@ -126,18 +142,5 @@ fun NavGraph(navController: NavHostController) {
             AdminDashboardScreen(navController = navController)
         }
 
-        composable(
-            route = "movie_form?movieId={movieId}",
-            arguments = listOf(navArgument("movieId") { 
-                type = NavType.StringType
-                nullable = true
-                defaultValue = null
-            })
-        ) { backStackEntry ->
-            MovieFormScreen(
-                navController = navController,
-                movieId = backStackEntry.arguments?.getString("movieId")
-            )
-        }
     }
 }

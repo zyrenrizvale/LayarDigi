@@ -37,6 +37,10 @@ fun MovieFormScreen(navController: NavController, movieId: String?) {
     var duration by remember { mutableStateOf(initialMovie?.duration?.toString() ?: "") }
     var director by remember { mutableStateOf(initialMovie?.director ?: "") }
     var isNowShowing by remember { mutableStateOf(initialMovie?.isNowShowing ?: true) }
+    var language by remember { mutableStateOf(initialMovie?.language ?: "Indonesia") }
+    var ageRating by remember { mutableStateOf(initialMovie?.ageRating ?: "13+") }
+    var cast by remember { mutableStateOf(initialMovie?.cast?.joinToString(", ") ?: "") }
+    var availableCinemas by remember { mutableStateOf(initialMovie?.availableCinemas?.joinToString(", ") ?: "") }
 
     Column(
         modifier = Modifier
@@ -98,6 +102,24 @@ fun MovieFormScreen(navController: NavController, movieId: String?) {
                 )
             }
 
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                FormTextField(
+                    label = "Bahasa", 
+                    value = language, 
+                    onValueChange = { language = it }, 
+                    modifier = Modifier.weight(1f)
+                )
+                FormTextField(
+                    label = "Batas Usia", 
+                    value = ageRating, 
+                    onValueChange = { ageRating = it }, 
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            
+            FormTextField(label = "Pemeran (Pisahkan dengan koma)", value = cast, onValueChange = { cast = it })
+            FormTextField(label = "ID Cabang (Pisahkan dengan koma)", value = availableCinemas, onValueChange = { availableCinemas = it })
+
             FormTextField(
                 label = "Sinopsis", 
                 value = synopsis, 
@@ -143,9 +165,10 @@ fun MovieFormScreen(navController: NavController, movieId: String?) {
                         isNowShowing = isNowShowing,
                         year = initialMovie?.year ?: 2026,
                         director = director.takeIf { it.isNotBlank() } ?: "-",
-                        cast = initialMovie?.cast ?: emptyList(),
-                        language = initialMovie?.language ?: "English",
-                        ageRating = initialMovie?.ageRating ?: "13+"
+                        cast = cast.split(",").map { it.trim() }.filter { it.isNotEmpty() },
+                        language = language.takeIf { it.isNotBlank() } ?: "Indonesia",
+                        ageRating = ageRating.takeIf { it.isNotBlank() } ?: "13+",
+                        availableCinemas = availableCinemas.split(",").map { it.trim() }.filter { it.isNotEmpty() }
                     )
                     
                     if (isEditMode) {

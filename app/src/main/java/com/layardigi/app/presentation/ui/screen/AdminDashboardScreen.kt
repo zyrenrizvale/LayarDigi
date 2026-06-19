@@ -13,9 +13,7 @@ import androidx.compose.material.icons.rounded.ArrowBackIos
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Movie
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,12 +26,16 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.layardigi.app.data.model.Movie
+import com.layardigi.app.data.model.Cinema
 import com.layardigi.app.data.repository.MovieRepository
+import com.layardigi.app.data.repository.CinemaRepository
 import com.layardigi.app.ui.theme.*
 
 @Composable
 fun AdminDashboardScreen(navController: NavController) {
+    var selectedTab by remember { mutableStateOf(0) }
     val movies by MovieRepository.moviesFlow.collectAsState()
+    val cinemas by CinemaRepository.cinemasFlow.collectAsState()
 
     Column(
         modifier = Modifier
@@ -73,13 +75,56 @@ fun AdminDashboardScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        LazyColumn(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)) {
-            items(movies) { movie ->
-                AdminMovieItem(
-                    movie = movie,
-                    onToggleStatus = { MovieRepository.toggleNowShowing(movie.id) },
-                    onEdit = { navController.navigate("movie_form?movieId=${movie.id}") }
+        TabRow(
+            selectedTabIndex = selectedTab,
+            containerColor = DarkBackground,
+            contentColor = CinemaRed,
+            indicator = { tabPositions ->
+                SecondaryIndicator(
+                    Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                    color = CinemaRed
                 )
+            }
+        ) {
+            Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 },
+                text = { Text("Film", color = if (selectedTab == 0) CinemaRed else TextSecondary) })
+            Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 },
+                text = { Text("Cabang", color = if (selectedTab == 1) CinemaRed else TextSecondary) })
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        if (selectedTab == 0) {
+            LazyColumn(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)) {
+                items(movies) { movie ->
+                    AdminMovieItem(
+                        movie = movie,
+                        onToggleStatus = { MovieRepository.toggleNowShowing(movie.id) },
+                        onEdit = { navController.navigate("movie_form?movieId=${movie.id}") }
+                    )
+                }
+            }
+        } else {
+            LazyColumn(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)) {
+                item {
+                    Button(
+                        onClick = { navController.navigate("cinema_form") },
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = CinemaRed),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Rounded.Add, contentDescription = null, tint = Color.White)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Tambah Cabang", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+                items(cinemas) { cinema ->
+                    AdminCinemaItem(
+                        cinema = cinema,
+                        onEdit = { navController.navigate("cinema_form?cinemaId=${cinema.id}") },
+                        onDelete = { CinemaRepository.deleteCinema(cinema.id) }
+                    )
+                }
             }
         }
     }
@@ -151,6 +196,57 @@ fun AdminMovieItem(
                 .background(DarkSurfaceVariant, CircleShape)
         ) {
             Icon(Icons.Rounded.Edit, contentDescription = "Edit", tint = TextPrimary, modifier = Modifier.size(16.dp))
+        }
+    }
+}
+
+@Composable
+fun AdminCinemaItem(
+    cinema: Cinema,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(DarkCard)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = cinema.name,
+                color = TextPrimary,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "${cinema.city} • Rp ${cinema.basePrice}",
+                color = TextSecondary,
+                fontSize = 13.sp
+            )
+        }
+        Row {
+            IconButton(
+                onClick = onEdit,
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(DarkSurfaceVariant, CircleShape)
+            ) {
+                Icon(Icons.Rounded.Edit, contentDescription = "Edit", tint = TextPrimary, modifier = Modifier.size(16.dp))
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            IconButton(
+                onClick = onDelete,
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(DarkSurfaceVariant, CircleShape)
+            ) {
+                Icon(Icons.Rounded.Delete, contentDescription = "Delete", tint = CinemaRed, modifier = Modifier.size(16.dp))
+            }
         }
     }
 }
