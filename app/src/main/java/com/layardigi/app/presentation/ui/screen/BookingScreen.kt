@@ -230,3 +230,21 @@ fun BookingScreen(
         }
     }
 }
+
+@Composable
+fun LegendItem(color: Color, label: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(14.dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(color)
+        )
+        Spacer(modifier = Modifier.width(5.dp))
+        Text(text = label, color = TextSecondary, fontSize = 11.sp)
+    }
+}
+
+fun formatPrice(price: Int): String {
+    return "Rp ${String.format("%,d", price).replace(",", ".")}"
+}
