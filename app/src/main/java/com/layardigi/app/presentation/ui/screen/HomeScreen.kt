@@ -168,81 +168,100 @@ fun HomeTopBar(
 
 private fun uiState_isSearching(query: String) = true // always show text field
 
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import kotlinx.coroutines.delay
+
 @Composable
 fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
     if (movies.isEmpty()) return
-    val film = movies.first()
+    
+    val pagerState = rememberPagerState(pageCount = { movies.size })
 
-    Box(modifier = Modifier.fillMaxWidth().height(320.dp).clickable { onMovieClick(film) }) {
-        AsyncImage(model = film.posterUrl, contentDescription = film.title,
-            contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+    LaunchedEffect(pagerState.currentPage) {
+        delay(4000)
+        val nextPage = (pagerState.currentPage + 1) % movies.size
+        pagerState.animateScrollToPage(nextPage)
+    }
 
-        Box(modifier = Modifier.fillMaxSize().background(
-            Brush.verticalGradient(listOf(Color.Transparent, DarkBackground.copy(0.5f), DarkBackground.copy(0.97f)))
-        ))
+    Box(modifier = Modifier.fillMaxWidth().height(320.dp)) {
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize()
+        ) { page ->
+            val film = movies[page]
+            Box(modifier = Modifier.fillMaxSize().clickable { onMovieClick(film) }) {
+                AsyncImage(model = film.posterUrl, contentDescription = film.title,
+                    contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
 
-        Column(modifier = Modifier.align(Alignment.BottomStart).padding(20.dp)) {
-            // Featured badge
-            Surface(
-                color = CinemaRed,
-                shape = RoundedCornerShape(6.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Rounded.LocalFireDepartment, contentDescription = null, tint = Color.White, modifier = Modifier.size(12.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("UNGGULAN", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                }
-            }
+                Box(modifier = Modifier.fillMaxSize().background(
+                    Brush.verticalGradient(listOf(Color.Transparent, DarkBackground.copy(0.5f), DarkBackground.copy(0.97f)))
+                ))
 
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(film.title, color = TextPrimary, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 36.sp)
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Rounded.Star, contentDescription = null, tint = CinemaGold, modifier = Modifier.size(15.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("${film.rating}", color = CinemaGold, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.width(12.dp))
-                Text("•", color = TextSecondary)
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(film.genre.take(2).joinToString(" • "), color = TextSecondary, fontSize = 13.sp)
-                Spacer(modifier = Modifier.width(12.dp))
-                Text("•", color = TextSecondary)
-                Spacer(modifier = Modifier.width(12.dp))
-                Icon(Icons.Rounded.Schedule, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(13.dp))
-                Spacer(modifier = Modifier.width(3.dp))
-                Text("${film.duration} min", color = TextSecondary, fontSize = 13.sp)
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color.Transparent,
-                    modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(
-                        Brush.linearGradient(listOf(CinemaRed, CinemaRedDark))
-                    ).clickable { onMovieClick(film) }
-                ) {
-                    Row(modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.ConfirmationNumber, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Pesan Tiket", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                Column(modifier = Modifier.align(Alignment.BottomStart).padding(20.dp).padding(bottom = 20.dp)) {
+                    // Featured badge
+                    Surface(
+                        color = CinemaRed,
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Rounded.LocalFireDepartment, contentDescription = null, tint = Color.White, modifier = Modifier.size(12.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("UNGGULAN", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                        }
                     }
-                }
 
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = DarkSurfaceVariant.copy(0.85f),
-                    modifier = Modifier.clickable { onMovieClick(film) }
-                ) {
-                    Row(modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.Info, contentDescription = null, tint = TextPrimary, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Detail", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(film.title, color = TextPrimary, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 36.sp)
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Rounded.Star, contentDescription = null, tint = CinemaGold, modifier = Modifier.size(15.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("${film.rating}", color = CinemaGold, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text("•", color = TextSecondary)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(film.genre.take(2).joinToString(" • "), color = TextSecondary, fontSize = 13.sp)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text("•", color = TextSecondary)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Icon(Icons.Rounded.Schedule, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(13.dp))
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text("${film.duration} min", color = TextSecondary, fontSize = 13.sp)
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color.Transparent,
+                            modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(
+                                Brush.linearGradient(listOf(CinemaRed, CinemaRedDark))
+                            ).clickable { onMovieClick(film) }
+                        ) {
+                            Row(modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Rounded.ConfirmationNumber, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Pesan Tiket", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = DarkSurfaceVariant.copy(0.85f),
+                            modifier = Modifier.clickable { onMovieClick(film) }
+                        ) {
+                            Row(modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Rounded.Info, contentDescription = null, tint = TextPrimary, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Detail", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                            }
+                        }
                     }
                 }
             }
@@ -252,9 +271,12 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
         Row(modifier = Modifier.align(Alignment.BottomEnd).padding(end = 20.dp, bottom = 22.dp),
             horizontalArrangement = Arrangement.spacedBy(5.dp)) {
             movies.forEachIndexed { i, _ ->
+                val isSelected = pagerState.currentPage == i
+                val width by androidx.compose.animation.core.animateDpAsState(if (isSelected) 20.dp else 6.dp, label = "dotWidth")
+                val color by androidx.compose.animation.animateColorAsState(if (isSelected) CinemaRed else TextDisabled, label = "dotColor")
                 Box(modifier = Modifier
-                    .size(if (i == 0) 20.dp else 6.dp, 6.dp)
-                    .background(if (i == 0) CinemaRed else TextDisabled, RoundedCornerShape(3.dp)))
+                    .size(width, 6.dp)
+                    .background(color, RoundedCornerShape(3.dp)))
             }
         }
     }

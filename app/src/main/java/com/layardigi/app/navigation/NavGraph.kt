@@ -107,5 +107,27 @@ fun NavGraph(navController: NavHostController) {
                 navController = navController
             )
         }
+
+        composable("login") {
+            LoginScreen(navController = navController)
+        }
+
+        composable("admin_dashboard") {
+            AdminDashboardScreen(navController = navController)
+        }
+
+        composable(
+            route = "movie_form?movieId={movieId}",
+            arguments = listOf(navArgument("movieId") { 
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            })
+        ) { backStackEntry ->
+            MovieFormScreen(
+                navController = navController,
+                movieId = backStackEntry.arguments?.getString("movieId")
+            )
+        }
     }
 }

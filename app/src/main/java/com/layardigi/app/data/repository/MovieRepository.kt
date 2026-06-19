@@ -1,10 +1,14 @@
 package com.layardigi.app.data.repository
 
 import com.layardigi.app.data.model.Movie
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 object MovieRepository {
 
-    val nowShowingMovies = listOf(
+    private val initialNowShowingMovies = listOf(
         Movie(
             id = "colony",
             title = "Colony",
@@ -52,7 +56,7 @@ object MovieRepository {
         )
     )
 
-    val classicMovies = listOf(
+    private val initialClassicMovies = listOf(
         Movie(
             id = "interstellar",
             title = "Interstellar",
@@ -130,7 +134,35 @@ object MovieRepository {
         )
     )
 
-    val allMovies: List<Movie> = nowShowingMovies + classicMovies
+    private val _moviesFlow = MutableStateFlow<List<Movie>>(initialNowShowingMovies + initialClassicMovies)
+    val moviesFlow: StateFlow<List<Movie>> = _moviesFlow.asStateFlow()
 
-    fun getMovieById(id: String): Movie? = allMovies.find { it.id == id }
+    // For backward compatibility before full migration
+    val allMovies: List<Movie> get() = _moviesFlow.value
+    val nowShowingMovies: List<Movie> get() = _moviesFlow.value.filter { it.isNowShowing }
+    val classicMovies: List<Movie> get() = _moviesFlow.value.filter { !it.isNowShowing }
+
+    fun getMovieById(id: String): Movie? = _moviesFlow.value.find { it.id == id }
+
+    fun toggleNowShowing(id: String) {
+        _moviesFlow.update { currentList ->
+            currentList.map {
+                if (it.id == id) it.copy(isNowShowing = !it.isNowShowing) else it
+            }
+        }
+    }
+
+    fun addMovie(movie: Movie) {
+        _moviesFlow.update { currentList ->
+            currentList + movie
+        }
+    }
+
+    fun updateMovie(updatedMovie: Movie) {
+        _moviesFlow.update { currentList ->
+            currentList.map {
+                if (it.id == updatedMovie.id) updatedMovie else it
+            }
+        }
+    }
 }
