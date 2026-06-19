@@ -8,7 +8,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,7 +20,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -38,255 +40,190 @@ fun MovieDetailScreen(
     viewModel: MovieDetailViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-
     var selectedCinema by remember { mutableStateOf<Cinema?>(null) }
     var selectedShowtime by remember { mutableStateOf("") }
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
+        ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
                 permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-        if (granted) viewModel.onLocationPermissionGranted()
-        else viewModel.onLocationPermissionDenied()
+        if (granted) viewModel.onLocationPermissionGranted() else viewModel.onLocationPermissionDenied()
     }
 
-    LaunchedEffect(movieId) {
-        viewModel.loadMovie(movieId)
-    }
+    LaunchedEffect(movieId) { viewModel.loadMovie(movieId) }
 
     val movie = uiState.movie ?: return
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(DarkBackground)
-    ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 100.dp)
-        ) {
-            // Hero Poster
+    Box(modifier = Modifier.fillMaxSize().background(DarkBackground)) {
+        LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 100.dp)) {
+
+            // Hero
             item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(420.dp)
-                ) {
+                Box(modifier = Modifier.fillMaxWidth().height(440.dp)) {
                     AsyncImage(
                         model = movie.posterUrl,
                         contentDescription = movie.title,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.Transparent,
-                                        DarkBackground.copy(alpha = 0.6f),
-                                        DarkBackground
-                                    )
-                                )
-                            )
-                    )
+                    Box(modifier = Modifier.fillMaxSize().background(
+                        Brush.verticalGradient(listOf(Color.Transparent, DarkBackground.copy(0.55f), DarkBackground))
+                    ))
 
                     // Back button
-                    Box(
+                    IconButton(
+                        onClick = { navController.popBackStack() },
                         modifier = Modifier
-                            .padding(top = 52.dp, start = 16.dp)
-                            .size(40.dp)
-                            .background(DarkSurfaceVariant.copy(alpha = 0.8f), androidx.compose.foundation.shape.CircleShape)
-                            .clickable { navController.popBackStack() },
-                        contentAlignment = Alignment.Center
+                            .padding(top = 48.dp, start = 12.dp)
+                            .size(42.dp)
+                            .background(DarkBackground.copy(0.6f), CircleShape)
                     ) {
-                        Text(text = "←", color = TextPrimary, fontSize = 20.sp)
+                        Icon(Icons.Rounded.ArrowBackIos, "Kembali", tint = TextPrimary, modifier = Modifier.size(18.dp))
                     }
 
                     // Not showing badge
                     if (!movie.isNowShowing) {
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(top = 52.dp, end = 16.dp)
-                                .background(DarkSurfaceVariant, RoundedCornerShape(8.dp))
-                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = DarkSurfaceVariant,
+                            modifier = Modifier.align(Alignment.TopEnd).padding(top = 52.dp, end = 16.dp)
                         ) {
-                            Text(
-                                text = "TIDAK TAYANG",
-                                color = TextSecondary,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.sp
-                            )
+                            Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Rounded.EventBusy, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("TIDAK TAYANG", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                            }
                         }
                     }
 
-                    // Title overlay
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(20.dp)
-                    ) {
-                        // Genre chips
+                    // Title section at bottom
+                    Column(modifier = Modifier.align(Alignment.BottomStart).padding(20.dp)) {
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             movie.genre.take(3).forEach { genre ->
-                                Box(
-                                    modifier = Modifier
-                                        .background(CinemaRed.copy(alpha = 0.2f), RoundedCornerShape(6.dp))
-                                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                                ) {
-                                    Text(text = genre, color = CinemaRed, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                                Surface(shape = RoundedCornerShape(6.dp), color = CinemaRed.copy(0.2f)) {
+                                    Text(genre, color = CinemaRed, fontSize = 11.sp, fontWeight = FontWeight.Medium,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
                                 }
                             }
                         }
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = movie.title,
-                            color = TextPrimary,
-                            fontSize = 34.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            lineHeight = 38.sp
-                        )
+                        Text(movie.title, color = TextPrimary, fontSize = 34.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 38.sp)
                     }
                 }
             }
 
-            // Movie Info
+            // Stats row
             item {
-                Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
-                    // Stats Row
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(DarkCard)
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        InfoStat(icon = "⭐", value = movie.rating.toString(), label = "Rating")
-                        Divider(modifier = Modifier.width(1.dp).height(40.dp), color = DarkSurfaceVariant)
-                        InfoStat(icon = "🕐", value = "${movie.duration}'", label = "Durasi")
-                        Divider(modifier = Modifier.width(1.dp).height(40.dp), color = DarkSurfaceVariant)
-                        InfoStat(icon = "📅", value = movie.year.toString(), label = "Tahun")
-                        Divider(modifier = Modifier.width(1.dp).height(40.dp), color = DarkSurfaceVariant)
-                        InfoStat(icon = "🔞", value = movie.ageRating, label = "Usia")
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    // Synopsis
-                    Text(
-                        text = "Sinopsis",
-                        color = TextPrimary,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = movie.synopsis,
-                        color = TextSecondary,
-                        fontSize = 14.sp,
-                        lineHeight = 22.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    // Director & Cast
-                    Text("Sutradara", color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                    Text(movie.director, color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Text("Pemain", color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                    Text(
-                        text = movie.cast.joinToString(", "),
-                        color = TextPrimary,
-                        fontSize = 14.sp,
-                        lineHeight = 20.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Text("Bahasa", color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                    Text(movie.language, color = TextPrimary, fontSize = 14.sp)
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp)
+                        .clip(RoundedCornerShape(14.dp)).background(DarkCard).padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    InfoStatIcon(Icons.Rounded.Star, "${movie.rating}", "Rating", CinemaGold)
+                    VerticalDivider()
+                    InfoStatIcon(Icons.Rounded.Schedule, "${movie.duration}m", "Durasi", TextSecondary)
+                    VerticalDivider()
+                    InfoStatIcon(Icons.Rounded.CalendarMonth, "${movie.year}", "Tahun", TextSecondary)
+                    VerticalDivider()
+                    InfoStatIcon(Icons.Rounded.Shield, movie.ageRating, "Usia", TextSecondary)
                 }
             }
 
-            // Cinema & Booking section — only for now showing films
+            // Synopsis
+            item {
+                Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                    Text("Sinopsis", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(movie.synopsis, color = TextSecondary, fontSize = 14.sp, lineHeight = 22.sp)
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // Director
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Rounded.Movie, contentDescription = null, tint = CinemaRed, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text("Sutradara", color = TextSecondary, fontSize = 11.sp)
+                            Text(movie.director, color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Cast
+                    Row(verticalAlignment = Alignment.Top) {
+                        Icon(Icons.Rounded.Group, contentDescription = null, tint = CinemaRed, modifier = Modifier.size(16.dp).padding(top = 2.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text("Pemain", color = TextSecondary, fontSize = 11.sp)
+                            Text(movie.cast.joinToString(", "), color = TextPrimary, fontSize = 14.sp, lineHeight = 20.sp)
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Language
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Rounded.Language, contentDescription = null, tint = CinemaRed, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text("Bahasa", color = TextSecondary, fontSize = 11.sp)
+                            Text(movie.language, color = TextPrimary, fontSize = 14.sp)
+                        }
+                    }
+                }
+            }
+
+            // Cinema section
             if (movie.isNowShowing) {
                 item {
-                    Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-                        Divider(color = DarkSurfaceVariant, thickness = 1.dp)
+                    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 20.dp)) {
+                        HorizontalDivider(color = DarkSurfaceVariant)
                         Spacer(modifier = Modifier.height(20.dp))
-
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = "Pilih Bioskop",
-                                color = TextPrimary,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-
-                            // Location button
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(
-                                        if (uiState.locationGranted) SuccessGreen.copy(alpha = 0.15f)
-                                        else CinemaRed.copy(alpha = 0.15f)
-                                    )
-                                    .clickable {
-                                        if (!uiState.locationGranted) {
-                                            locationPermissionLauncher.launch(
-                                                arrayOf(
-                                                    Manifest.permission.ACCESS_FINE_LOCATION,
-                                                    Manifest.permission.ACCESS_COARSE_LOCATION
-                                                )
-                                            )
-                                        }
+                            Text("Pilih Bioskop", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = if (uiState.locationGranted) SuccessGreen.copy(0.15f) else CinemaRed.copy(0.12f),
+                                modifier = Modifier.clickable {
+                                    if (!uiState.locationGranted) {
+                                        locationPermissionLauncher.launch(arrayOf(
+                                            Manifest.permission.ACCESS_FINE_LOCATION,
+                                            Manifest.permission.ACCESS_COARSE_LOCATION
+                                        ))
                                     }
-                                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                                }
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                                     if (uiState.isLocationLoading) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(14.dp),
-                                            color = CinemaRed,
-                                            strokeWidth = 2.dp
-                                        )
+                                        CircularProgressIndicator(modifier = Modifier.size(14.dp), color = CinemaRed, strokeWidth = 2.dp)
                                     } else {
-                                        Text(
-                                            text = if (uiState.locationGranted) "✅" else "📍",
-                                            fontSize = 14.sp
+                                        Icon(
+                                            if (uiState.locationGranted) Icons.Rounded.MyLocation else Icons.Rounded.LocationOn,
+                                            contentDescription = null,
+                                            tint = if (uiState.locationGranted) SuccessGreen else CinemaRed,
+                                            modifier = Modifier.size(14.dp)
                                         )
                                     }
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = if (uiState.locationGranted) "Terdekat" else "Aktifkan Lokasi",
+                                        if (uiState.locationGranted) "Terdekat" else "Aktifkan",
                                         color = if (uiState.locationGranted) SuccessGreen else CinemaRed,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Medium
+                                        fontSize = 13.sp, fontWeight = FontWeight.Medium
                                     )
                                 }
                             }
                         }
-
-                        uiState.locationError?.let { error ->
+                        uiState.locationError?.let {
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = error,
-                                color = WarningAmber,
-                                fontSize = 12.sp
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Rounded.Warning, contentDescription = null, tint = WarningAmber, modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(it, color = WarningAmber, fontSize = 12.sp)
+                            }
                         }
-
                         Spacer(modifier = Modifier.height(14.dp))
                     }
                 }
@@ -295,44 +232,26 @@ fun MovieDetailScreen(
                     CinemaCard(
                         cinema = cinema,
                         showDistance = uiState.locationGranted,
-                        onShowtimeSelected = { c, time ->
-                            selectedCinema = c
-                            selectedShowtime = time
-                        },
-                        modifier = Modifier
-                            .padding(horizontal = 20.dp)
-                            .padding(bottom = 12.dp)
+                        onShowtimeSelected = { c, time -> selectedCinema = c; selectedShowtime = time },
+                        modifier = Modifier.padding(horizontal = 20.dp).padding(bottom = 12.dp)
                     )
                 }
             } else {
-                // "Tidak Tayang" notice
                 item {
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 12.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(DarkCard)
-                            .padding(24.dp),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp)
+                            .clip(RoundedCornerShape(16.dp)).background(DarkCard).padding(28.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "🎭", fontSize = 40.sp)
+                            Icon(Icons.Rounded.EventBusy, contentDescription = null, tint = TextDisabled, modifier = Modifier.size(56.dp))
                             Spacer(modifier = Modifier.height(12.dp))
-                            Text(
-                                text = "Film Ini Sudah Tidak Tayang",
-                                color = TextPrimary,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                textAlign = TextAlign.Center
-                            )
+                            Text("Film Ini Sudah Tidak Tayang", color = TextPrimary, fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                text = "Film ${movie.title} (${movie.year}) sudah tidak tersedia di bioskop LayarDigi. Nikmati film-film yang sedang tayang di halaman utama.",
-                                color = TextSecondary,
-                                fontSize = 13.sp,
-                                textAlign = TextAlign.Center,
-                                lineHeight = 20.sp
+                                "Film ${movie.title} (${movie.year}) sudah tidak tersedia di bioskop LayarDigi.",
+                                color = TextSecondary, fontSize = 13.sp, textAlign = TextAlign.Center, lineHeight = 20.sp
                             )
                         }
                     }
@@ -340,50 +259,37 @@ fun MovieDetailScreen(
             }
         }
 
-        // Bottom Booking Bar — only for now showing films with showtime selected
+        // Bottom booking bar
         if (movie.isNowShowing) {
+            val canBook = selectedCinema != null && selectedShowtime.isNotEmpty()
             Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, DarkBackground)
-                        )
-                    )
+                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+                    .background(Brush.verticalGradient(listOf(Color.Transparent, DarkBackground)))
                     .padding(horizontal = 20.dp, vertical = 16.dp)
             ) {
-                val canBook = selectedCinema != null && selectedShowtime.isNotEmpty()
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
+                Row(
+                    modifier = Modifier.fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
-                        .background(
-                            if (canBook)
-                                Brush.linearGradient(listOf(CinemaRed, CinemaRedDark))
-                            else
-                                Brush.linearGradient(listOf(DarkCard, DarkCard))
-                        )
+                        .background(if (canBook) Brush.linearGradient(listOf(CinemaRed, CinemaRedDark)) else Brush.linearGradient(listOf(DarkCard, DarkCard)))
                         .clickable(enabled = canBook) {
                             selectedCinema?.let { cinema ->
-                                navController.navigate(
-                                    Screen.Booking.createRoute(movie.id, cinema.id, selectedShowtime)
-                                )
+                                navController.navigate(Screen.Booking.createRoute(movie.id, cinema.id, selectedShowtime))
                             }
                         }
                         .padding(18.dp),
-                    contentAlignment = Alignment.Center
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = if (canBook)
-                            "🎟  Pesan Tiket — ${selectedCinema?.name?.take(20)}... | $selectedShowtime"
-                        else
-                            "Pilih bioskop & jadwal tayang",
-                        color = if (canBook) Color.White else TextDisabled,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        textAlign = TextAlign.Center
-                    )
+                    if (canBook) {
+                        Icon(Icons.Rounded.ConfirmationNumber, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Pesan Tiket  •  ${selectedCinema?.city}  |  $selectedShowtime",
+                            color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    } else {
+                        Icon(Icons.Rounded.Theaters, contentDescription = null, tint = TextDisabled, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Pilih bioskop & jadwal tayang", color = TextDisabled, fontSize = 14.sp)
+                    }
                 }
             }
         }
@@ -391,11 +297,16 @@ fun MovieDetailScreen(
 }
 
 @Composable
-fun InfoStat(icon: String, value: String, label: String) {
+fun InfoStatIcon(icon: androidx.compose.ui.graphics.vector.ImageVector, value: String, label: String, iconTint: androidx.compose.ui.graphics.Color) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = icon, fontSize = 18.sp)
+        Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
         Spacer(modifier = Modifier.height(4.dp))
-        Text(text = value, color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-        Text(text = label, color = TextSecondary, fontSize = 11.sp)
+        Text(value, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        Text(label, color = TextSecondary, fontSize = 11.sp)
     }
+}
+
+@Composable
+fun VerticalDivider() {
+    Box(modifier = Modifier.width(1.dp).height(40.dp).background(DarkSurfaceVariant))
 }

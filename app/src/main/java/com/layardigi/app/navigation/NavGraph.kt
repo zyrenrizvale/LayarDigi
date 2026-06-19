@@ -41,6 +41,17 @@ fun NavGraph(navController: NavHostController) {
             HomeScreen(navController = navController)
         }
 
+        // Bottom nav tab stubs
+        composable("search_tab") {
+            SearchScreen(navController = navController)
+        }
+        composable("cinemas_tab") {
+            CinemasScreen(navController = navController)
+        }
+        composable("profile_tab") {
+            ProfileScreen(navController = navController)
+        }
+
         composable(
             route = Screen.MovieDetail.route,
             arguments = listOf(navArgument("movieId") { type = NavType.StringType })
