@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1051886433643",
+    "project_id": "layardigi-cf4f5",
+    "storage_bucket": "layardigi-cf4f5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1051886433643:android:3cd5a80821a85d5b80c82e",
+        "android_client_info": {
+          "package_name": "com.layardigi.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA-3hPl38Zk2cQMrh5dwd1vcm4Z6EwPOvg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
