@@ -12,6 +12,7 @@ data class Movie(
     val year: Int,
     val director: String,
     val cast: List<String>,
-    val language: String = "Indonesia",
-    val ageRating: String = "13+"
+    val language: String,
+    val ageRating: String,
+    val availableCinemas: List<String> = emptyList()
 )

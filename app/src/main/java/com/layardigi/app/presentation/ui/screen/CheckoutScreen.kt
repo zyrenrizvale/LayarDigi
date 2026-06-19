@@ -33,6 +33,7 @@ import com.layardigi.app.ui.theme.*
 fun CheckoutScreen(
     movieId: String,
     cinemaId: String,
+    date: String,
     showtime: String,
     seatIds: String,
     total: Int,
@@ -41,8 +42,8 @@ fun CheckoutScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    LaunchedEffect(movieId, cinemaId, showtime, seatIds, total) {
-        viewModel.loadCheckoutData(movieId, cinemaId, showtime, seatIds, total)
+    LaunchedEffect(movieId, cinemaId, date, showtime, seatIds, total) {
+        viewModel.loadCheckoutData(movieId, cinemaId, date, showtime, seatIds, total)
     }
     LaunchedEffect(uiState.paymentStatus) {
         if (uiState.paymentStatus == PaymentStatus.SUCCESS) {

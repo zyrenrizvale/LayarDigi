@@ -209,8 +209,8 @@ fun BookingScreen(
                         else Brush.linearGradient(listOf(DarkCard, DarkCard)))
                     .clickable(enabled = canProceed) {
                         navController.navigate(Screen.Checkout.createRoute(
-                            movieId = movieId, cinemaId = cinemaId, showtime = showtime,
-                            seats = viewModel.getSelectedSeatIds(), total = uiState.totalPrice
+                            movieId = movieId, cinemaId = cinemaId, date = uiState.selectedDate,
+                            showtime = showtime, seats = viewModel.getSelectedSeatIds(), total = uiState.totalPrice
                         ))
                     }
                     .padding(18.dp),

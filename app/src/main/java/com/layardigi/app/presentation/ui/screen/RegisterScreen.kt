@@ -24,15 +24,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.google.firebase.database.FirebaseDatabase
-import com.layardigi.app.data.repository.AuthRepository
-import com.layardigi.app.data.repository.Role
 import com.layardigi.app.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(navController: NavController) {
+fun RegisterScreen(navController: NavController) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
     var errorMsg by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
 
@@ -54,7 +53,7 @@ fun LoginScreen(navController: NavController) {
             Icon(Icons.Rounded.ArrowBackIos, "Kembali", tint = TextPrimary, modifier = Modifier.size(18.dp))
         }
 
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(30.dp))
 
         Box(
             modifier = Modifier
@@ -65,15 +64,15 @@ fun LoginScreen(navController: NavController) {
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Rounded.Theaters, contentDescription = null, tint = Color.White, modifier = Modifier.size(40.dp))
+            Icon(Icons.Rounded.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(40.dp))
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Text("Selamat Datang", color = TextPrimary, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold)
-        Text("Silakan masuk untuk melanjutkan", color = TextSecondary, fontSize = 14.sp)
+        Text("Buat Akun", color = TextPrimary, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold)
+        Text("Daftar untuk memesan tiket", color = TextSecondary, fontSize = 14.sp)
 
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(30.dp))
 
         OutlinedTextField(
             value = username,
@@ -109,23 +108,40 @@ fun LoginScreen(navController: NavController) {
             singleLine = true
         )
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = confirmPassword,
+            onValueChange = { confirmPassword = it; errorMsg = "" },
+            label = { Text("Konfirmasi Password", color = TextSecondary) },
+            leadingIcon = { Icon(Icons.Rounded.Lock, contentDescription = null, tint = TextSecondary) },
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                focusedBorderColor = CinemaRed,
+                unfocusedBorderColor = DarkSurfaceVariant,
+                containerColor = DarkCard
+            ),
+            shape = RoundedCornerShape(14.dp),
+            singleLine = true
+        )
+
         if (errorMsg.isNotEmpty()) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(errorMsg, color = CinemaRed, fontSize = 12.sp)
         }
 
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(30.dp))
 
         Button(
             onClick = {
                 if (username.isBlank() || password.isBlank()) {
-                    errorMsg = "Username dan password tidak boleh kosong"
+                    errorMsg = "Semua kolom harus diisi"
                     return@Button
                 }
-
-                if (username == "admin123" && password == "passadmin") {
-                    AuthRepository.login(username, Role.ADMIN)
-                    navController.popBackStack()
+                if (password != confirmPassword) {
+                    errorMsg = "Password tidak cocok"
                     return@Button
                 }
 
@@ -133,21 +149,27 @@ fun LoginScreen(navController: NavController) {
                 val db = FirebaseDatabase.getInstance().getReference("users")
                 
                 db.child(username).get().addOnSuccessListener { snapshot ->
-                    isLoading = false
                     if (snapshot.exists()) {
-                        val dbPassword = snapshot.child("password").getValue(String::class.java)
-                        if (dbPassword == password) {
-                            AuthRepository.login(username, Role.USER)
-                            navController.popBackStack()
-                        } else {
-                            errorMsg = "Password salah"
-                        }
+                        errorMsg = "Username sudah terdaftar"
+                        isLoading = false
                     } else {
-                        errorMsg = "Username tidak ditemukan"
+                        val userMap = mapOf(
+                            "username" to username,
+                            "password" to password,
+                            "role" to "USER"
+                        )
+                        db.child(username).setValue(userMap).addOnCompleteListener { task ->
+                            isLoading = false
+                            if (task.isSuccessful) {
+                                navController.popBackStack() // Kembali ke Login
+                            } else {
+                                errorMsg = "Gagal mendaftar: ${task.exception?.message}"
+                            }
+                        }
                     }
                 }.addOnFailureListener {
-                    isLoading = false
                     errorMsg = "Terjadi kesalahan koneksi"
+                    isLoading = false
                 }
             },
             modifier = Modifier
@@ -160,21 +182,8 @@ fun LoginScreen(navController: NavController) {
             if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
             } else {
-                Text("Masuk", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text("Daftar", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-            Text("Belum punya akun? ", color = TextSecondary, fontSize = 14.sp)
-            Text(
-                text = "Daftar",
-                color = CinemaRed,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.clickable { navController.navigate("register") }
-            )
         }
     }
 }

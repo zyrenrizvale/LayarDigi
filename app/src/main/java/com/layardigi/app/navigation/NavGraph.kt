@@ -18,9 +18,9 @@ sealed class Screen(val route: String) {
         fun createRoute(movieId: String, cinemaId: String, showtime: String) =
             "booking/$movieId/$cinemaId/${showtime.replace(":", "_")}"
     }
-    object Checkout : Screen("checkout/{movieId}/{cinemaId}/{showtime}/{seats}/{total}") {
-        fun createRoute(movieId: String, cinemaId: String, showtime: String, seats: String, total: Int) =
-            "checkout/$movieId/$cinemaId/${showtime.replace(":", "_")}/$seats/$total"
+    object Checkout : Screen("checkout/{movieId}/{cinemaId}/{date}/{showtime}/{seats}/{total}") {
+        fun createRoute(movieId: String, cinemaId: String, date: String, showtime: String, seats: String, total: Int) =
+            "checkout/$movieId/$cinemaId/${date.replace(" ", "_").replace(",", "")}/${showtime.replace(":", "_")}/$seats/$total"
     }
     object TicketSuccess : Screen("ticket_success/{bookingCode}") {
         fun createRoute(bookingCode: String) = "ticket_success/$bookingCode"
@@ -31,8 +31,12 @@ sealed class Screen(val route: String) {
 fun NavGraph(navController: NavHostController) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Splash.route
+        startDestination = "white_screen"
     ) {
+        composable("white_screen") {
+            WhiteScreen(navController = navController)
+        }
+
         composable(Screen.Splash.route) {
             SplashScreen(navController = navController)
         }
@@ -83,6 +87,7 @@ fun NavGraph(navController: NavHostController) {
             arguments = listOf(
                 navArgument("movieId") { type = NavType.StringType },
                 navArgument("cinemaId") { type = NavType.StringType },
+                navArgument("date") { type = NavType.StringType },
                 navArgument("showtime") { type = NavType.StringType },
                 navArgument("seats") { type = NavType.StringType },
                 navArgument("total") { type = NavType.IntType }
@@ -91,6 +96,7 @@ fun NavGraph(navController: NavHostController) {
             CheckoutScreen(
                 movieId = backStackEntry.arguments?.getString("movieId") ?: "",
                 cinemaId = backStackEntry.arguments?.getString("cinemaId") ?: "",
+                date = backStackEntry.arguments?.getString("date") ?: "",
                 showtime = backStackEntry.arguments?.getString("showtime")?.replace("_", ":") ?: "",
                 seatIds = backStackEntry.arguments?.getString("seats") ?: "",
                 total = backStackEntry.arguments?.getInt("total") ?: 0,
@@ -110,6 +116,10 @@ fun NavGraph(navController: NavHostController) {
 
         composable("login") {
             LoginScreen(navController = navController)
+        }
+
+        composable("register") {
+            RegisterScreen(navController = navController)
         }
 
         composable("admin_dashboard") {

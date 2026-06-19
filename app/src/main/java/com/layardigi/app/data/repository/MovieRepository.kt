@@ -1,168 +1,93 @@
 package com.layardigi.app.data.repository
 
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import com.layardigi.app.data.model.Movie
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 
 object MovieRepository {
 
-    private val initialNowShowingMovies = listOf(
-        Movie(
-            id = "colony",
-            title = "Colony",
-            genre = listOf("Sci-Fi", "Thriller", "Drama"),
-            rating = 7.8f,
-            duration = 115,
-            synopsis = "Di tahun 2092, Bumi telah dikuasai oleh makhluk luar angkasa yang disebut 'The Mesh'. Sekelompok pemberontak manusia berjuang untuk merebut kembali planet mereka dari kolonisasi alien yang kejam. Sam Grant, seorang mantan tentara, memimpin misi berbahaya untuk menghancurkan pusat komando musuh sebelum umat manusia sepenuhnya musnah. Dalam balapan melawan waktu, setiap pilihan menentukan nasib seluruh peradaban.",
-            posterUrl = "https://cdn.cgv.id/uploads_v2/movie/compressed/26020800.jpg?version=2",
-            isNowShowing = true,
-            year = 2026,
-            director = "Marcus Webb",
-            cast = listOf("Chris Hemsworth", "Ana de Armas", "Michael B. Jordan", "Zoe Saldana"),
-            language = "English (Subtitle Indo)",
-            ageRating = "17+"
-        ),
-        Movie(
-            id = "peninsula",
-            title = "Peninsula",
-            genre = listOf("Action", "Horror", "Thriller"),
-            rating = 7.5f,
-            duration = 116,
-            synopsis = "Empat tahun setelah wabah zombie melanda Korea, mantan tentara Jung Seok kembali ke Semenanjung Korea yang kini menjadi zona kematian. Misinya: mengambil kembali kargo senilai jutaan dolar yang terbengkalai di jalan bebas hambatan yang dihuni zombie dan gerombolan manusia liar yang lebih berbahaya dari zombie itu sendiri. Aksi penuh adrenalin di antara reruntuhan peradaban.",
-            posterUrl = "https://cdn.cgv.id/uploads/movie/pictures/20011700.jpg?version=2",
-            isNowShowing = true,
-            year = 2026,
-            director = "Yeon Sang-ho",
-            cast = listOf("Gang Dong-won", "Lee Jung-hyun", "Lee Re", "Kwon Hae-hyo"),
-            language = "Korea (Subtitle Indo)",
-            ageRating = "17+"
-        ),
-        Movie(
-            id = "escape",
-            title = "Escape",
-            genre = listOf("Thriller", "Action", "Mystery"),
-            rating = 7.2f,
-            duration = 108,
-            synopsis = "Seorang wanita muda terjebak di dalam kota yang tiba-tiba dikunci oleh pemerintah akibat ancaman biologi berbahaya. Satu-satunya cara bertahan hidup adalah menemukan jalan keluar sebelum kota dihancurkan dalam 12 jam. Setiap pintu yang dibuka bisa menjadi jebakan, dan setiap orang yang ditemui bisa jadi musuh. Sebuah thriller intens yang tidak memberi ruang untuk bernapas.",
-            posterUrl = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQbaPfabrCbx7TOYyD3NZlK68o-BiG1ClHQV_Sk95mn-ttYzSmTTveJ7Fm8&s=10",
-            isNowShowing = true,
-            year = 2026,
-            director = "David Leitch",
-            cast = listOf("Florence Pugh", "Tom Hardy", "Oscar Isaac", "Lupita Nyong'o"),
-            language = "English (Subtitle Indo)",
-            ageRating = "13+"
-        )
-    )
+    private val db = FirebaseDatabase.getInstance().getReference("movies")
 
-    private val initialClassicMovies = listOf(
-        Movie(
-            id = "interstellar",
-            title = "Interstellar",
-            genre = listOf("Sci-Fi", "Drama", "Adventure"),
-            rating = 8.7f,
-            duration = 169,
-            synopsis = "Ketika Bumi menghadapi kekeringan dan kelaparan massal, mantan pilot NASA Cooper bergabung dengan tim ilmuwan melewati lubang cacing di luar angkasa untuk memastikan kelangsungan hidup umat manusia. Sebuah epik tentang cinta, waktu, dan pengorbanan yang melampaui batas dimensi.",
-            posterUrl = "https://m.media-amazon.com/images/M/MV5BZjdkOTU3MDktN2IxOS00OGEyLWFmMjktY2FiMmZkNWIyODZiXkEyXkFqcGdeQXVyMTMxODk2OTU@._V1_SX300.jpg",
-            isNowShowing = false,
-            year = 2014,
-            director = "Christopher Nolan",
-            cast = listOf("Matthew McConaughey", "Anne Hathaway", "Jessica Chastain", "Michael Caine"),
-            language = "English (Subtitle Indo)",
-            ageRating = "13+"
-        ),
-        Movie(
-            id = "inception",
-            title = "Inception",
-            genre = listOf("Sci-Fi", "Action", "Thriller"),
-            rating = 8.8f,
-            duration = 148,
-            synopsis = "Dom Cobb adalah seorang pencuri yang mampu masuk ke dalam mimpi orang lain dan mencuri rahasia dari alam bawah sadar mereka. Ia ditawari kesempatan untuk menghapus catatan kriminalnya dengan melakukan 'inception' — menanamkan ide ke dalam pikiran seseorang. Sebuah perjalanan melalui lapisan-lapisan realita yang mengubah persepsi tentang kebenaran.",
-            posterUrl = "https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_SX300.jpg",
-            isNowShowing = false,
-            year = 2010,
-            director = "Christopher Nolan",
-            cast = listOf("Leonardo DiCaprio", "Joseph Gordon-Levitt", "Elliot Page", "Tom Hardy"),
-            language = "English (Subtitle Indo)",
-            ageRating = "13+"
-        ),
-        Movie(
-            id = "parasite",
-            title = "Parasite",
-            genre = listOf("Drama", "Thriller", "Dark Comedy"),
-            rating = 8.5f,
-            duration = 132,
-            synopsis = "Keluarga Ki-taek yang miskin merencanakan cara untuk menyusup ke kehidupan mewah keluarga Park. Rencana yang tampak sempurna ini segera berubah menjadi mimpi buruk yang penuh kejutan gelap tentang ketidaksetaraan kelas sosial yang menghantam dengan telak dan tak terduga.",
-            posterUrl = "https://m.media-amazon.com/images/M/MV5BYWZjMjk3ZTItODQ2ZC00NTY5LWE0ZDYtZTI3MjcwN2Q5NTVkXkEyXkFqcGdeQXVyODk4OTc3MTY@._V1_SX300.jpg",
-            isNowShowing = false,
-            year = 2019,
-            director = "Bong Joon-ho",
-            cast = listOf("Song Kang-ho", "Lee Sun-kyun", "Cho Yeo-jeong", "Choi Woo-shik"),
-            language = "Korea (Subtitle Indo)",
-            ageRating = "17+"
-        ),
-        Movie(
-            id = "dark_knight",
-            title = "The Dark Knight",
-            genre = listOf("Action", "Crime", "Drama"),
-            rating = 9.0f,
-            duration = 152,
-            synopsis = "Batman menghadapi musuh paling berbahaya: The Joker, seorang kriminal anarchis yang bersumpah untuk menciptakan kekacauan di Gotham City. Dalam pertempuran yang menguras jiwa dan raga, Bruce Wayne harus memilih antara menjadi pahlawan yang dibutuhkan atau simbol yang tidak bisa dihancurkan.",
-            posterUrl = "https://m.media-amazon.com/images/M/MV5BMTMxNTMwODM0NF5BMl5BanBnXkFtZTcwODAyMTk2Mw@@._V1_SX300.jpg",
-            isNowShowing = false,
-            year = 2008,
-            director = "Christopher Nolan",
-            cast = listOf("Christian Bale", "Heath Ledger", "Aaron Eckhart", "Gary Oldman"),
-            language = "English (Subtitle Indo)",
-            ageRating = "13+"
-        ),
-        Movie(
-            id = "avengers_endgame",
-            title = "Avengers: Endgame",
-            genre = listOf("Action", "Sci-Fi", "Adventure"),
-            rating = 8.4f,
-            duration = 181,
-            synopsis = "Setelah Thanos menghapus setengah populasi alam semesta, para Avenger yang tersisa berjuang dengan sisa harapan. Tony Stark, Steve Rogers, dan kawan-kawan menemukan cara untuk memperbaiki kerusakan dalam pertempuran epik yang menentukan nasib seluruh alam semesta.",
-            posterUrl = "https://m.media-amazon.com/images/M/MV5BMTc5MDE2ODcwNV5BMl5BanBnXkFtZTgwMzI2NzQ2NzM@._V1_SX300.jpg",
-            isNowShowing = false,
-            year = 2019,
-            director = "Anthony & Joe Russo",
-            cast = listOf("Robert Downey Jr.", "Chris Evans", "Mark Ruffalo", "Chris Hemsworth"),
-            language = "English (Subtitle Indo)",
-            ageRating = "13+"
-        )
-    )
-
-    private val _moviesFlow = MutableStateFlow<List<Movie>>(initialNowShowingMovies + initialClassicMovies)
+    private val _moviesFlow = MutableStateFlow<List<Movie>>(emptyList())
     val moviesFlow: StateFlow<List<Movie>> = _moviesFlow.asStateFlow()
 
-    // For backward compatibility before full migration
     val allMovies: List<Movie> get() = _moviesFlow.value
     val nowShowingMovies: List<Movie> get() = _moviesFlow.value.filter { it.isNowShowing }
     val classicMovies: List<Movie> get() = _moviesFlow.value.filter { !it.isNowShowing }
 
+    init {
+        db.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (!snapshot.exists()) {
+                    seedInitialData()
+                    return
+                }
+
+                val list = mutableListOf<Movie>()
+                for (child in snapshot.children) {
+                    val id = child.child("id").getValue(String::class.java) ?: continue
+                    val title = child.child("title").getValue(String::class.java) ?: ""
+                    val rating = child.child("rating").getValue(Float::class.java) ?: 0f
+                    val duration = child.child("duration").getValue(Int::class.java) ?: 0
+                    val synopsis = child.child("synopsis").getValue(String::class.java) ?: ""
+                    val posterUrl = child.child("posterUrl").getValue(String::class.java) ?: ""
+                    val isNowShowing = child.child("nowShowing").getValue(Boolean::class.java) ?: false
+                    val year = child.child("year").getValue(Int::class.java) ?: 0
+                    val director = child.child("director").getValue(String::class.java) ?: ""
+                    val language = child.child("language").getValue(String::class.java) ?: ""
+                    val ageRating = child.child("ageRating").getValue(String::class.java) ?: ""
+
+                    val genre = mutableListOf<String>()
+                    child.child("genre").children.forEach { it.getValue(String::class.java)?.let { g -> genre.add(g) } }
+                    
+                    val cast = mutableListOf<String>()
+                    child.child("cast").children.forEach { it.getValue(String::class.java)?.let { c -> cast.add(c) } }
+                    
+                    val availableCinemas = mutableListOf<String>()
+                    child.child("availableCinemas").children.forEach { it.getValue(String::class.java)?.let { ac -> availableCinemas.add(ac) } }
+
+                    list.add(
+                        Movie(
+                            id = id, title = title, genre = genre, rating = rating, duration = duration,
+                            synopsis = synopsis, posterUrl = posterUrl, isNowShowing = isNowShowing,
+                            year = year, director = director, cast = cast, language = language, ageRating = ageRating,
+                            availableCinemas = availableCinemas
+                        )
+                    )
+                }
+                _moviesFlow.value = list
+            }
+
+            override fun onCancelled(error: DatabaseError) {}
+        })
+    }
+
+    private fun seedInitialData() {
+        val initialMovies = listOf(
+            Movie("colony", "Colony", listOf("Sci-Fi", "Thriller", "Drama"), 7.8f, 115, "Di tahun 2092, Bumi telah dikuasai...", "https://cdn.cgv.id/uploads_v2/movie/compressed/26020800.jpg?version=2", true, 2026, "Marcus Webb", listOf("Chris Hemsworth", "Ana de Armas"), "English (Subtitle Indo)", "17+", listOf("ld_grand_indo", "ld_pim", "ld_bekasi", "ld_tangerang", "ld_depok")),
+            Movie("peninsula", "Peninsula", listOf("Action", "Horror", "Thriller"), 7.5f, 116, "Empat tahun setelah wabah zombie...", "https://cdn.cgv.id/uploads/movie/pictures/20011700.jpg?version=2", true, 2026, "Yeon Sang-ho", listOf("Gang Dong-won", "Lee Jung-hyun"), "Korea (Subtitle Indo)", "17+", listOf("ld_grand_indo", "ld_pim")),
+            Movie("interstellar", "Interstellar", listOf("Sci-Fi", "Drama", "Adventure"), 8.7f, 169, "Ketika Bumi menghadapi kekeringan...", "https://m.media-amazon.com/images/M/MV5BZjdkOTU3MDktN2IxOS00OGEyLWFmMjktY2FiMmZkNWIyODZiXkEyXkFqcGdeQXVyMTMxODk2OTU@._V1_SX300.jpg", false, 2014, "Christopher Nolan", listOf("Matthew McConaughey", "Anne Hathaway"), "English (Subtitle Indo)", "13+", listOf("ld_grand_indo", "ld_pim", "ld_bekasi", "ld_tangerang", "ld_depok"))
+        )
+        initialMovies.forEach { addMovie(it) }
+    }
+
     fun getMovieById(id: String): Movie? = _moviesFlow.value.find { it.id == id }
 
     fun toggleNowShowing(id: String) {
-        _moviesFlow.update { currentList ->
-            currentList.map {
-                if (it.id == id) it.copy(isNowShowing = !it.isNowShowing) else it
-            }
-        }
+        val movie = getMovieById(id) ?: return
+        db.child(id).child("nowShowing").setValue(!movie.isNowShowing)
     }
 
     fun addMovie(movie: Movie) {
-        _moviesFlow.update { currentList ->
-            currentList + movie
-        }
+        db.child(movie.id).setValue(movie)
     }
 
-    fun updateMovie(updatedMovie: Movie) {
-        _moviesFlow.update { currentList ->
-            currentList.map {
-                if (it.id == updatedMovie.id) updatedMovie else it
-            }
-        }
+    fun updateMovie(movie: Movie) {
+        db.child(movie.id).setValue(movie)
     }
 }

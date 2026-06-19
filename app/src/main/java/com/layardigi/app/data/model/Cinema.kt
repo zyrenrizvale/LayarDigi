@@ -8,5 +8,6 @@ data class Cinema(
     val latitude: Double,
     val longitude: Double,
     val showtimes: List<String>,
+    val basePrice: Int = 55000,
     val distanceKm: Double = 0.0
 )

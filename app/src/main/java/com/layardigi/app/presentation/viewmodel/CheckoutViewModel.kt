@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.google.firebase.database.FirebaseDatabase
 
 enum class PaymentStatus { IDLE, PROCESSING, SUCCESS, FAILED }
 
@@ -46,12 +47,13 @@ class CheckoutViewModel : ViewModel() {
         PaymentMethod("credit_card", "Kartu Kredit/Debit", "💳", "Visa, Mastercard, JCB")
     )
 
-    fun loadCheckoutData(movieId: String, cinemaId: String, showtime: String, seatIds: String, total: Int) {
+    fun loadCheckoutData(movieId: String, cinemaId: String, date: String, showtime: String, seatIds: String, total: Int) {
         val movie = MovieRepository.getMovieById(movieId)
         val cinema = CinemaRepository.getCinemaById(cinemaId)
         _uiState.value = _uiState.value.copy(
             movie = movie,
             cinema = cinema,
+            selectedDate = date,
             showtime = showtime,
             seatIds = seatIds.split(",").filter { it.isNotEmpty() },
             totalPrice = total,
@@ -66,12 +68,33 @@ class CheckoutViewModel : ViewModel() {
     fun processPayment() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(paymentStatus = PaymentStatus.PROCESSING)
-            delay(2800) // Simulasi proses pembayaran
-            val code = "LD${System.currentTimeMillis().toString().takeLast(8)}"
-            _uiState.value = _uiState.value.copy(
-                paymentStatus = PaymentStatus.SUCCESS,
-                bookingCode = code
-            )
+            delay(1500) // Simulasi pembayaran
+            
+            val state = _uiState.value
+            val movieId = state.movie?.id ?: return@launch
+            val cinemaId = state.cinema?.id ?: return@launch
+            val dateKey = state.selectedDate.replace(" ", "_").replace(",", "")
+            val timeKey = state.showtime.replace(":", "")
+            
+            val db = FirebaseDatabase.getInstance().getReference("bookings")
+            val updates = mutableMapOf<String, Any>()
+            for (seatId in state.seatIds) {
+                updates["$seatId/status"] = "BOOKED"
+            }
+            
+            db.child(movieId).child(cinemaId).child(dateKey).child(timeKey)
+                .updateChildren(updates)
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        val code = "LD${System.currentTimeMillis().toString().takeLast(8)}"
+                        _uiState.value = _uiState.value.copy(
+                            paymentStatus = PaymentStatus.SUCCESS,
+                            bookingCode = code
+                        )
+                    } else {
+                        _uiState.value = _uiState.value.copy(paymentStatus = PaymentStatus.FAILED)
+                    }
+                }
         }
     }
 

@@ -15,6 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import android.app.Activity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,6 +30,7 @@ import com.layardigi.app.ui.theme.*
 fun ProfileScreen(navController: NavController) {
     val role by AuthRepository.currentUserRole.collectAsState()
     val username by AuthRepository.currentUsername.collectAsState()
+    val context = LocalContext.current
 
     val isGuest = role == Role.GUEST
     val isAdmin = role == Role.ADMIN
@@ -170,6 +173,20 @@ fun ProfileScreen(navController: NavController) {
             ) {
                 Text("Logout", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
             }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Button(
+            onClick = { (context as? Activity)?.finishAffinity() },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, bottom = 20.dp)
+                .height(52.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = DarkCard),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Text("Keluar Aplikasi", color = TextSecondary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }
