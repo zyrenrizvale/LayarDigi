@@ -12,6 +12,9 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ArrowBackIos
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Movie
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -80,7 +83,7 @@ fun AdminDashboardScreen(navController: NavController) {
             containerColor = DarkBackground,
             contentColor = CinemaRed,
             indicator = { tabPositions ->
-                SecondaryIndicator(
+                TabRowDefaults.SecondaryIndicator(
                     Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
                     color = CinemaRed
                 )

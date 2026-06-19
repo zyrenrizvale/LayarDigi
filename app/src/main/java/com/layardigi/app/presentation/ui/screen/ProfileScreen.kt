@@ -181,7 +181,8 @@ fun ProfileScreen(navController: NavController) {
             onClick = { (context as? Activity)?.finishAffinity() },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, bottom = 20.dp)
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 20.dp)
                 .height(52.dp),
             colors = ButtonDefaults.buttonColors(containerColor = DarkCard),
             shape = RoundedCornerShape(16.dp)

@@ -43,9 +43,7 @@ object CinemaRepository {
                     }
 
                     list.add(
-                        Cinema(id, name, address, city, latitude, longitude, showtimesList, 0.0).apply {
-                            // Need to add basePrice to Cinema model later
-                        }
+                        Cinema(id, name, address, city, latitude, longitude, showtimesList, basePrice, 0.0)
                     )
                 }
                 _cinemasFlow.value = list
