@@ -38,7 +38,12 @@ import com.layardigi.app.presentation.ui.component.MovieCard
 import com.layardigi.app.presentation.ui.component.MovieCardWide
 import com.layardigi.app.presentation.viewmodel.HomeViewModel
 import com.layardigi.app.ui.theme.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.ExperimentalFoundationApi
+import kotlinx.coroutines.delay
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
     navController: NavController,
@@ -168,10 +173,7 @@ fun HomeTopBar(
 
 private fun uiState_isSearching(query: String) = true // always show text field
 
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import kotlinx.coroutines.delay
-
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
     if (movies.isEmpty()) return

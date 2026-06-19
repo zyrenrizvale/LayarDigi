@@ -185,7 +185,6 @@ fun FormTextField(
         colors = TextFieldDefaults.outlinedTextFieldColors(
             focusedBorderColor = CinemaRed,
             unfocusedBorderColor = DarkSurfaceVariant,
-            textColor = TextPrimary,
             containerColor = DarkCard
         ),
         shape = RoundedCornerShape(14.dp),
