@@ -1,6 +1,8 @@
 package com.layardigi.app.presentation.ui.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -41,6 +43,8 @@ fun MovieFormScreen(navController: NavController, movieId: String?) {
     var ageRating by remember { mutableStateOf(initialMovie?.ageRating ?: "13+") }
     var cast by remember { mutableStateOf(initialMovie?.cast?.joinToString(", ") ?: "") }
     var availableCinemas by remember { mutableStateOf(initialMovie?.availableCinemas?.joinToString(", ") ?: "") }
+    var selectedGenres by remember { mutableStateOf(initialMovie?.genre ?: emptyList()) }
+    var year by remember { mutableStateOf(initialMovie?.year?.toString() ?: "2026") }
 
     Column(
         modifier = Modifier
@@ -98,6 +102,43 @@ fun MovieFormScreen(navController: NavController, movieId: String?) {
             
             FormTextField(label = "Pemeran (Pisahkan dengan koma)", value = cast, onValueChange = { cast = it })
             FormTextField(label = "ID Cabang (Pisahkan dengan koma)", value = availableCinemas, onValueChange = { availableCinemas = it })
+            FormTextField(label = "Tahun Rilis", value = year, onValueChange = { year = it }, keyboardType = KeyboardType.Number)
+
+            Text("Pilih Genre", color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+            @OptIn(ExperimentalLayoutApi::class)
+            FlowRow(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val availableGenres = listOf("Action", "Adventure", "Sci-Fi", "Drama", "Horror", "Thriller", "Comedy", "Romance", "Fantasy", "Animation", "Family")
+                availableGenres.forEach { genreName ->
+                    val isSelected = selectedGenres.contains(genreName)
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (isSelected) CinemaRed.copy(0.2f) else DarkCard,
+                        border = BorderStroke(
+                            1.dp,
+                            if (isSelected) CinemaRed else DarkSurfaceVariant
+                        ),
+                        modifier = Modifier.clickable {
+                            selectedGenres = if (isSelected) {
+                                selectedGenres - genreName
+                            } else {
+                                selectedGenres + genreName
+                            }
+                        }
+                    ) {
+                        Text(
+                            text = genreName,
+                            color = if (isSelected) CinemaRed else TextSecondary,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                        )
+                    }
+                }
+            }
 
             FormTextField(
                 label = "Sinopsis", 
@@ -136,13 +177,13 @@ fun MovieFormScreen(navController: NavController, movieId: String?) {
                     val newMovie = Movie(
                         id = movieId ?: UUID.randomUUID().toString(),
                         title = title.takeIf { it.isNotBlank() } ?: "Untitled",
-                        genre = initialMovie?.genre ?: listOf("Action"), // simplified
+                        genre = selectedGenres.ifEmpty { listOf("Action") },
                         rating = rating.toFloatOrNull() ?: 0f,
                         duration = duration.toIntOrNull() ?: 120,
                         synopsis = synopsis.takeIf { it.isNotBlank() } ?: "-",
                         posterUrl = posterUrl.takeIf { it.isNotBlank() } ?: "",
                         isNowShowing = isNowShowing,
-                        year = initialMovie?.year ?: 2026,
+                        year = year.toIntOrNull() ?: 2026,
                         director = director.takeIf { it.isNotBlank() } ?: "-",
                         cast = cast.split(",").map { it.trim() }.filter { it.isNotEmpty() },
                         language = language.takeIf { it.isNotBlank() } ?: "Indonesia",

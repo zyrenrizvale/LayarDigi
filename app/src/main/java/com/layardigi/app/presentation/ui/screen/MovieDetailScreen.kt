@@ -111,17 +111,17 @@ fun MovieDetailScreen(
                         }
                     }
 
-                    // Not showing badge
+                    // Not showing badge (Akan Tayang)
                     if (!movie.isNowShowing) {
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = DarkSurfaceVariant,
+                            color = CinemaRed.copy(0.15f),
                             modifier = Modifier.align(Alignment.TopEnd).padding(top = 52.dp, end = 16.dp)
                         ) {
                             Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Rounded.EventBusy, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(14.dp))
+                                Icon(Icons.Rounded.CalendarMonth, contentDescription = null, tint = CinemaRed, modifier = Modifier.size(14.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("TIDAK TAYANG", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                                Text("AKAN TAYANG", color = CinemaRed, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                             }
                         }
                     }
@@ -273,13 +273,13 @@ fun MovieDetailScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Rounded.EventBusy, contentDescription = null, tint = TextDisabled, modifier = Modifier.size(56.dp))
+                            Icon(Icons.Rounded.Schedule, contentDescription = null, tint = CinemaRed, modifier = Modifier.size(56.dp))
                             Spacer(modifier = Modifier.height(12.dp))
-                            Text("Film Ini Sudah Tidak Tayang", color = TextPrimary, fontSize = 16.sp,
+                            Text("Film Ini Segera Tayang", color = TextPrimary, fontSize = 16.sp,
                                 fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                "Film ${movie.title} (${movie.year}) sudah tidak tersedia di bioskop LayarDigi.",
+                                "Film ${movie.title} (${movie.year}) akan segera hadir di bioskop LayarDigi. Nantikan jadwal tayangnya!",
                                 color = TextSecondary, fontSize = 13.sp, textAlign = TextAlign.Center, lineHeight = 20.sp
                             )
                         }

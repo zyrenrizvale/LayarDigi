@@ -46,7 +46,33 @@ fun AdminDashboardScreen(navController: NavController) {
             .background(DarkBackground)
             .statusBarsPadding()
     ) {
-        Spacer(modifier = Modifier.height(52.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(
+                onClick = { navController.popBackStack() },
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(DarkSurfaceVariant, CircleShape)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.ArrowBackIos,
+                    contentDescription = "Kembali",
+                    tint = TextPrimary,
+                    modifier = Modifier.size(16.dp).padding(start = 4.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = "Dashboard Admin",
+                color = TextPrimary,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
 
         // Tab for Films/Cinemas
         TabRow(
@@ -72,11 +98,24 @@ fun AdminDashboardScreen(navController: NavController) {
 
         if (selectedTab == 0) {
             LazyColumn(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)) {
+                item {
+                    Button(
+                        onClick = { navController.navigate("movie_form") },
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = CinemaRed),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Rounded.Add, contentDescription = null, tint = Color.White)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Tambah Film", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
                 items(movies) { movie ->
                     AdminMovieItem(
                         movie = movie,
                         onToggleStatus = { MovieRepository.toggleNowShowing(movie.id) },
-                        onEdit = { navController.navigate("movie_form?movieId=${movie.id}") }
+                        onEdit = { navController.navigate("movie_form?movieId=${movie.id}") },
+                        onDelete = { MovieRepository.deleteMovie(movie.id) }
                     )
                 }
             }
@@ -112,7 +151,8 @@ fun AdminDashboardScreen(navController: NavController) {
 fun AdminMovieItem(
     movie: Movie,
     onToggleStatus: () -> Unit,
-    onEdit: () -> Unit
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -167,13 +207,24 @@ fun AdminMovieItem(
                 )
             }
         }
-        IconButton(
-            onClick = onEdit,
-            modifier = Modifier
-                .size(36.dp)
-                .background(DarkSurfaceVariant, CircleShape)
-        ) {
-            Icon(Icons.Rounded.Edit, contentDescription = "Edit", tint = TextPrimary, modifier = Modifier.size(16.dp))
+        Row {
+            IconButton(
+                onClick = onEdit,
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(DarkSurfaceVariant, CircleShape)
+            ) {
+                Icon(Icons.Rounded.Edit, contentDescription = "Edit", tint = TextPrimary, modifier = Modifier.size(16.dp))
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            IconButton(
+                onClick = onDelete,
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(DarkSurfaceVariant, CircleShape)
+            ) {
+                Icon(Icons.Rounded.Delete, contentDescription = "Delete", tint = CinemaRed, modifier = Modifier.size(16.dp))
+            }
         }
     }
 }

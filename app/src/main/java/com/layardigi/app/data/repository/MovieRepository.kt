@@ -90,4 +90,8 @@ object MovieRepository {
     fun updateMovie(movie: Movie) {
         db.child(movie.id).setValue(movie)
     }
+
+    fun deleteMovie(id: String) {
+        db.child(id).removeValue()
+    }
 }
