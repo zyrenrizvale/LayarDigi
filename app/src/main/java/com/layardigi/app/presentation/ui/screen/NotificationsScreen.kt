@@ -125,6 +125,7 @@ fun AnnouncementCard(announcement: Announcement, onClick: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnnouncementDetailScreen(announcementId: String) {
     var announcement by remember { mutableStateOf<Announcement?>(null) }
@@ -231,8 +232,11 @@ fun AnnouncementDetailScreen(announcementId: String) {
                         onValueChange = { commentText = it },
                         placeholder = { Text("Tulis komentar...", color = TextDisabled) },
                         modifier = Modifier.weight(1f),
-                        colors = TextFieldDefaults.outlinedTextFieldColors(
-                            focusedBorderColor = CinemaRed, unfocusedBorderColor = DarkSurfaceVariant, containerColor = DarkBackground
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = CinemaRed,
+                            unfocusedBorderColor = DarkSurfaceVariant,
+                            unfocusedContainerColor = DarkBackground,
+                            focusedContainerColor = DarkBackground
                         ),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true
