@@ -81,6 +81,8 @@ fun MovieDetailScreen(
             .addOnSuccessListener { isFavorite = it.exists() }
     }
 
+    var showTrailerPlayer by rememberSaveable { mutableStateOf(false) }
+
     Box(modifier = Modifier.fillMaxSize().background(DarkBackground)) {
         LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 100.dp)) {
 
@@ -190,8 +192,6 @@ fun MovieDetailScreen(
             // Trailer button if available
             if (videoId != null && videoId.isNotEmpty()) {
                 item {
-                    var showTrailerPlayer by rememberSaveable { mutableStateOf(false) }
-
                     Surface(
                         shape = RoundedCornerShape(14.dp),
                         color = CinemaRed.copy(0.1f),
@@ -211,10 +211,6 @@ fun MovieDetailScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Tonton Trailer", color = CinemaRed, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                         }
-                    }
-
-                    if (showTrailerPlayer) {
-                        FullscreenLandscapePlayer(videoId = videoId, onClose = { showTrailerPlayer = false })
                     }
                 }
             }
@@ -400,6 +396,10 @@ fun MovieDetailScreen(
                 }
             }
         }
+        
+        if (showTrailerPlayer && videoId != null && videoId.isNotEmpty()) {
+            FullscreenLandscapePlayer(videoId = videoId, onClose = { showTrailerPlayer = false })
+        }
     }
 }
 
@@ -451,11 +451,30 @@ fun FullscreenLandscapePlayer(videoId: String, onClose: () -> Unit) {
                             override fun onPageFinished(view: android.webkit.WebView, url: String?) {
                                 super.onPageFinished(view, url)
                                 // Inject CSS to hide YouTube mobile web UI, creating a clean fullscreen player feel
+                                // And inject JavaScript to FORCE autoplay and unmute the video
                                 val js = """
                                     javascript:(function() {
                                         var style = document.createElement('style');
                                         style.innerHTML = 'ytm-header-bar, ytm-item-section-renderer, ytm-comment-section-renderer, ytm-companion-ad-renderer, .page-footer, .related-videos { display: none !important; } .player-container { position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; z-index: 9999 !important; background: black !important; } video { object-fit: contain !important; }';
                                         document.head.appendChild(style);
+                                        
+                                        var playAttempt = setInterval(function() {
+                                            var video = document.querySelector('video');
+                                            if (video) {
+                                                video.muted = false;
+                                                video.play();
+                                                
+                                                var unMuteBtn = document.querySelector('.ytm-custom-control-unmute');
+                                                if (unMuteBtn) unMuteBtn.click();
+                                                
+                                                if (!video.paused && !video.muted) {
+                                                    clearInterval(playAttempt);
+                                                }
+                                            }
+                                        }, 500);
+                                        
+                                        // Stop trying after 5 seconds to prevent infinite loops
+                                        setTimeout(function() { clearInterval(playAttempt); }, 5000);
                                     })();
                                 """.trimIndent().replace("\n", "")
                                 view.evaluateJavascript(js, null)

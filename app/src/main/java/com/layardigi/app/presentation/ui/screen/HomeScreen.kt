@@ -175,43 +175,41 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
                     val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
                     AndroidView(
                         factory = { ctx ->
-                            YouTubePlayerView(ctx).apply {
-                                lifecycleOwner.lifecycle.addObserver(this)
-                                enableAutomaticInitialization = false
-                                val options = IFramePlayerOptions.Builder()
-                                    .controls(0)
-                                    .autoplay(1)
-                                    .origin("https://www.youtube.com")
-                                    .build()
-                                initialize(object : AbstractYouTubePlayerListener() {
-                                    override fun onReady(youTubePlayer: YouTubePlayer) {
-                                        youTubePlayer.loadVideo(videoId, 0f)
+                            android.webkit.WebView(ctx).apply {
+                                settings.javaScriptEnabled = true
+                                settings.domStorageEnabled = true
+                                settings.mediaPlaybackRequiresUserGesture = false
+                                webViewClient = object : android.webkit.WebViewClient() {
+                                    override fun onPageFinished(view: android.webkit.WebView, url: String?) {
+                                        super.onPageFinished(view, url)
+                                        // Inject CSS to hide UI and make it clean for the slideshow banner
+                                        val js = """
+                                            javascript:(function() {
+                                                var style = document.createElement('style');
+                                                style.innerHTML = 'ytm-header-bar, ytm-item-section-renderer, ytm-comment-section-renderer, ytm-companion-ad-renderer, .page-footer, .related-videos { display: none !important; } .player-container { position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; z-index: 9999 !important; background: transparent !important; } video { object-fit: cover !important; }';
+                                                document.head.appendChild(style);
+                                                
+                                                var playAttempt = setInterval(function() {
+                                                    var video = document.querySelector('video');
+                                                    if (video) {
+                                                        video.muted = true; // Slideshow must be muted
+                                                        video.play();
+                                                        if (!video.paused) {
+                                                            clearInterval(playAttempt);
+                                                        }
+                                                    }
+                                                }, 500);
+                                                setTimeout(function() { clearInterval(playAttempt); }, 6000);
+                                            })();
+                                        """.trimIndent().replace("\n", "")
+                                        view.evaluateJavascript(js, null)
                                     }
-
-                                    override fun onStateChange(
-                                        youTubePlayer: YouTubePlayer,
-                                        state: PlayerConstants.PlayerState
-                                    ) {
-                                        playerState = state
-                                        if (state == PlayerConstants.PlayerState.ENDED) {
-                                            isVideoFinished = true
-                                            showVideo = false
-                                        }
-                                    }
-
-                                    override fun onError(
-                                        youTubePlayer: YouTubePlayer,
-                                        error: PlayerConstants.PlayerError
-                                    ) {
-                                        isVideoFinished = true
-                                        showVideo = false
-                                    }
-                                }, options)
+                                }
+                                loadUrl("https://m.youtube.com/watch?v=${videoId}")
                             }
                         },
                         onRelease = { view ->
-                            lifecycleOwner.lifecycle.removeObserver(view)
-                            view.release()
+                            view.destroy()
                         },
                         modifier = Modifier.fillMaxSize()
                     )
