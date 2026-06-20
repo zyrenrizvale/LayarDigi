@@ -162,13 +162,6 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
                 if (isCurrentPage) {
                     isAnyVideoPlaying = showVideo
                 }
-                if (showVideo) {
-                    delay(5000) // Give it 5 seconds to start playing
-                    if (playerState == PlayerConstants.PlayerState.UNKNOWN || playerState == PlayerConstants.PlayerState.UNSTARTED) {
-                        isVideoFinished = true
-                        showVideo = false
-                    }
-                }
             }
 
             Box(modifier = Modifier.fillMaxSize().clickable { onMovieClick(film) }) {
@@ -204,6 +197,7 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
                                                     var video = document.querySelector('video');
                                                     if (video) {
                                                         video.muted = true; // Slideshow must be muted
+                                                        video.loop = true; // Make it loop indefinitely
                                                         video.play();
                                                         if (!video.paused) {
                                                             clearInterval(playAttempt);

@@ -433,41 +433,41 @@ fun FullscreenLandscapePlayer(videoId: String?, directUrl: String?, onClose: () 
         }
     }
 
-    Dialog(
-        onDismissRequest = onClose,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            dismissOnBackPress = true,
-            dismissOnClickOutside = false
-        )
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(Color.Black)
+        .pointerInput(Unit) { } // Consume all touches so they don't pass through to the screen below
     ) {
-        Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-            AndroidView(
-                factory = { ctx ->
-                    if (directUrl != null) {
-                        android.widget.VideoView(ctx).apply {
-                            setVideoURI(android.net.Uri.parse(directUrl))
-                            val mediaController = android.widget.MediaController(ctx)
-                            mediaController.setAnchorView(this)
-                            setMediaController(mediaController)
-                            setOnPreparedListener { mp ->
-                                start()
-                            }
+        AndroidView(
+            factory = { ctx ->
+                if (directUrl != null) {
+                    android.widget.VideoView(ctx).apply {
+                        setVideoURI(android.net.Uri.parse(directUrl))
+                        val mediaController = android.widget.MediaController(ctx)
+                        mediaController.setAnchorView(this)
+                        setMediaController(mediaController)
+                        layoutParams = android.widget.FrameLayout.LayoutParams(
+                            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                            android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                        ).apply {
+                            gravity = android.view.Gravity.CENTER
                         }
-                    } else {
-                        android.webkit.WebView(ctx).apply {
+                        setOnPreparedListener { mp ->
+                            start()
+                        }
+                    }
+                } else {
+                    android.webkit.WebView(ctx).apply {
                         settings.javaScriptEnabled = true
                         settings.domStorageEnabled = true
                         settings.mediaPlaybackRequiresUserGesture = false
                         webViewClient = object : android.webkit.WebViewClient() {
                             override fun onPageFinished(view: android.webkit.WebView, url: String?) {
                                 super.onPageFinished(view, url)
-                                // Inject CSS to hide YouTube mobile web UI, creating a clean fullscreen player feel
-                                // And inject JavaScript to FORCE autoplay and unmute the video
                                 val js = """
                                     javascript:(function() {
                                         var style = document.createElement('style');
-                                        style.innerHTML = 'ytm-header-bar, ytm-item-section-renderer, ytm-comment-section-renderer, ytm-companion-ad-renderer, .page-footer, .related-videos { display: none !important; } .player-container { position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; z-index: 9999 !important; background: black !important; } video { object-fit: contain !important; }';
+                                        style.innerHTML = 'body, html { background-color: black !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; } ytm-header-bar, ytm-item-section-renderer, ytm-comment-section-renderer, ytm-companion-ad-renderer, .page-footer, .related-videos, .spinner { display: none !important; } ytm-mobile-video-player-renderer, #player-control-container, .player-container, video { position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; z-index: 99999 !important; object-fit: contain !important; background-color: black !important; }';
                                         document.head.appendChild(style);
                                         
                                         var playAttempt = setInterval(function() {
@@ -475,17 +475,13 @@ fun FullscreenLandscapePlayer(videoId: String?, directUrl: String?, onClose: () 
                                             if (video) {
                                                 video.muted = false;
                                                 video.play();
-                                                
                                                 var unMuteBtn = document.querySelector('.ytm-custom-control-unmute');
                                                 if (unMuteBtn) unMuteBtn.click();
-                                                
                                                 if (!video.paused && !video.muted) {
                                                     clearInterval(playAttempt);
                                                 }
                                             }
                                         }, 500);
-                                        
-                                        // Stop trying after 5 seconds to prevent infinite loops
                                         setTimeout(function() { clearInterval(playAttempt); }, 5000);
                                     })();
                                 """.trimIndent().replace("\n", "")
@@ -493,19 +489,23 @@ fun FullscreenLandscapePlayer(videoId: String?, directUrl: String?, onClose: () 
                             }
                         }
                         webChromeClient = android.webkit.WebChromeClient()
+                        layoutParams = android.widget.FrameLayout.LayoutParams(
+                            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                            android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                        )
                         loadUrl("https://m.youtube.com/watch?v=${videoId}")
                     }
                 }
             },
             onRelease = { view ->
-                    if (view is android.webkit.WebView) {
-                        view.destroy()
-                    } else if (view is android.widget.VideoView) {
-                        view.stopPlayback()
-                    }
-                },
-                modifier = Modifier.fillMaxSize()
-            )
+                if (view is android.webkit.WebView) {
+                    view.destroy()
+                } else if (view is android.widget.VideoView) {
+                    view.stopPlayback()
+                }
+            },
+            modifier = Modifier.fillMaxSize()
+        )
 
             // Top Header (Back Button)
             Row(
@@ -526,4 +526,3 @@ fun FullscreenLandscapePlayer(videoId: String?, directUrl: String?, onClose: () 
             }
         }
     }
-}
