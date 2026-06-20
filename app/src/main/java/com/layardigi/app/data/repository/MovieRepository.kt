@@ -17,8 +17,9 @@ object MovieRepository {
     val moviesFlow: StateFlow<List<Movie>> = _moviesFlow.asStateFlow()
 
     val allMovies: List<Movie> get() = _moviesFlow.value
-    val nowShowingMovies: List<Movie> get() = _moviesFlow.value.filter { it.isNowShowing }
-    val classicMovies: List<Movie> get() = _moviesFlow.value.filter { !it.isNowShowing }
+    val nowShowingMovies: List<Movie> get() = _moviesFlow.value.filter { it.status == "NOW_SHOWING" }
+    val classicMovies: List<Movie> get() = _moviesFlow.value.filter { it.status == "COMING_SOON" }
+    val finishedMovies: List<Movie> get() = _moviesFlow.value.filter { it.status == "FINISHED" }
 
     init {
         db.addValueEventListener(object : ValueEventListener {
@@ -36,11 +37,13 @@ object MovieRepository {
                     val duration = child.child("duration").getValue(Int::class.java) ?: 0
                     val synopsis = child.child("synopsis").getValue(String::class.java) ?: ""
                     val posterUrl = child.child("posterUrl").getValue(String::class.java) ?: ""
-                    val isNowShowing = child.child("nowShowing").getValue(Boolean::class.java) ?: false
+                    val status = child.child("status").getValue(String::class.java)
+                        ?: if (child.child("nowShowing").getValue(Boolean::class.java) == true) "NOW_SHOWING" else "COMING_SOON"
                     val year = child.child("year").getValue(Int::class.java) ?: 0
                     val director = child.child("director").getValue(String::class.java) ?: ""
                     val language = child.child("language").getValue(String::class.java) ?: ""
                     val ageRating = child.child("ageRating").getValue(String::class.java) ?: ""
+                    val trailerUrl = child.child("trailerUrl").getValue(String::class.java) ?: ""
 
                     val genre = mutableListOf<String>()
                     child.child("genre").children.forEach { it.getValue(String::class.java)?.let { g -> genre.add(g) } }
@@ -54,9 +57,9 @@ object MovieRepository {
                     list.add(
                         Movie(
                             id = id, title = title, genre = genre, rating = rating, duration = duration,
-                            synopsis = synopsis, posterUrl = posterUrl, isNowShowing = isNowShowing,
+                            synopsis = synopsis, posterUrl = posterUrl, status = status,
                             year = year, director = director, cast = cast, language = language, ageRating = ageRating,
-                            availableCinemas = availableCinemas
+                            trailerUrl = trailerUrl, availableCinemas = availableCinemas
                         )
                     )
                 }
@@ -69,9 +72,9 @@ object MovieRepository {
 
     private fun seedInitialData() {
         val initialMovies = listOf(
-            Movie("colony", "Colony", listOf("Sci-Fi", "Thriller", "Drama"), 7.8f, 115, "Di tahun 2092, Bumi telah dikuasai...", "https://cdn.cgv.id/uploads_v2/movie/compressed/26020800.jpg?version=2", true, 2026, "Marcus Webb", listOf("Chris Hemsworth", "Ana de Armas"), "English (Subtitle Indo)", "17+", listOf("ld_grand_indo", "ld_pim", "ld_bekasi", "ld_tangerang", "ld_depok")),
-            Movie("peninsula", "Peninsula", listOf("Action", "Horror", "Thriller"), 7.5f, 116, "Empat tahun setelah wabah zombie...", "https://cdn.cgv.id/uploads/movie/pictures/20011700.jpg?version=2", true, 2026, "Yeon Sang-ho", listOf("Gang Dong-won", "Lee Jung-hyun"), "Korea (Subtitle Indo)", "17+", listOf("ld_grand_indo", "ld_pim")),
-            Movie("interstellar", "Interstellar", listOf("Sci-Fi", "Drama", "Adventure"), 8.7f, 169, "Ketika Bumi menghadapi kekeringan...", "https://m.media-amazon.com/images/M/MV5BZjdkOTU3MDktN2IxOS00OGEyLWFmMjktY2FiMmZkNWIyODZiXkEyXkFqcGdeQXVyMTMxODk2OTU@._V1_SX300.jpg", false, 2014, "Christopher Nolan", listOf("Matthew McConaughey", "Anne Hathaway"), "English (Subtitle Indo)", "13+", listOf("ld_grand_indo", "ld_pim", "ld_bekasi", "ld_tangerang", "ld_depok"))
+            Movie("colony", "Colony", listOf("Sci-Fi", "Thriller", "Drama"), 7.8f, 115, "Di tahun 2092, Bumi telah dikuasai...", "https://cdn.cgv.id/uploads_v2/movie/compressed/26020800.jpg?version=2", "NOW_SHOWING", 2026, "Marcus Webb", listOf("Chris Hemsworth", "Ana de Armas"), "English (Subtitle Indo)", "17+", "zSWdZAibgR4", listOf("ld_grand_indo", "ld_pim", "ld_bekasi", "ld_tangerang", "ld_depok")),
+            Movie("peninsula", "Peninsula", listOf("Action", "Horror", "Thriller"), 7.5f, 116, "Empat tahun setelah wabah zombie...", "https://cdn.cgv.id/uploads/movie/pictures/20011700.jpg?version=2", "NOW_SHOWING", 2026, "Yeon Sang-ho", listOf("Gang Dong-won", "Lee Jung-hyun"), "Korea (Subtitle Indo)", "17+", "xsRstvdL6t8", listOf("ld_grand_indo", "ld_pim")),
+            Movie("interstellar", "Interstellar", listOf("Sci-Fi", "Drama", "Adventure"), 8.7f, 169, "Ketika Bumi menghadapi kekeringan...", "https://m.media-amazon.com/images/M/MV5BZjdkOTU3MDktN2IxOS00OGEyLWFmMjktY2FiMmZkNWIyODZiXkEyXkFqcGdeQXVyMTMxODk2OTU@._V1_SX300.jpg", "COMING_SOON", 2014, "Christopher Nolan", listOf("Matthew McConaughey", "Anne Hathaway"), "English (Subtitle Indo)", "13+", "zSWdZAibgR4", listOf("ld_grand_indo", "ld_pim", "ld_bekasi", "ld_tangerang", "ld_depok"))
         )
         initialMovies.forEach { addMovie(it) }
     }
@@ -80,7 +83,12 @@ object MovieRepository {
 
     fun toggleNowShowing(id: String) {
         val movie = getMovieById(id) ?: return
-        db.child(id).child("nowShowing").setValue(!movie.isNowShowing)
+        val nextStatus = when (movie.status) {
+            "COMING_SOON" -> "NOW_SHOWING"
+            "NOW_SHOWING" -> "FINISHED"
+            else -> "COMING_SOON"
+        }
+        db.child(id).child("status").setValue(nextStatus)
     }
 
     fun addMovie(movie: Movie) {

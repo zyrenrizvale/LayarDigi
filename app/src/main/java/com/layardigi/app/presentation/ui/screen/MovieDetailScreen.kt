@@ -34,6 +34,17 @@ import com.layardigi.app.navigation.Screen
 import com.layardigi.app.presentation.ui.component.CinemaCard
 import com.layardigi.app.presentation.viewmodel.MovieDetailViewModel
 import com.layardigi.app.ui.theme.*
+import android.app.Activity
+import android.content.pm.ActivityInfo
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.options.IFramePlayerOptions
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.views.YouTubePlayerView
 
 @Composable
 fun MovieDetailScreen(
@@ -111,17 +122,29 @@ fun MovieDetailScreen(
                         }
                     }
 
-                    // Not showing badge (Akan Tayang)
-                    if (!movie.isNowShowing) {
+                    // Status Badge
+                    if (movie.status != "NOW_SHOWING") {
+                        val isComing = movie.status == "COMING_SOON"
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = CinemaRed.copy(0.15f),
+                            color = if (isComing) CinemaRed.copy(0.15f) else DarkSurfaceVariant,
                             modifier = Modifier.align(Alignment.TopEnd).padding(top = 52.dp, end = 16.dp)
                         ) {
                             Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Rounded.CalendarMonth, contentDescription = null, tint = CinemaRed, modifier = Modifier.size(14.dp))
+                                Icon(
+                                    imageVector = if (isComing) Icons.Rounded.CalendarMonth else Icons.Rounded.EventBusy,
+                                    contentDescription = null,
+                                    tint = if (isComing) CinemaRed else TextSecondary,
+                                    modifier = Modifier.size(14.dp)
+                                )
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("AKAN TAYANG", color = CinemaRed, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                                Text(
+                                    text = if (isComing) "AKAN TAYANG" else "TIDAK TERSEDIA",
+                                    color = if (isComing) CinemaRed else TextSecondary,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 1.sp
+                                )
                             }
                         }
                     }
@@ -156,6 +179,39 @@ fun MovieDetailScreen(
                     InfoStatIcon(Icons.Rounded.CalendarMonth, "${movie.year}", "Tahun", TextSecondary)
                     VerticalDivider()
                     InfoStatIcon(Icons.Rounded.Shield, movie.ageRating, "Usia", TextSecondary)
+                }
+            }
+
+            // Trailer button if available
+            val videoId = remember(movie.trailerUrl) { extractYoutubeVideoId(movie.trailerUrl) }
+            if (!videoId.isNullOrEmpty()) {
+                item {
+                    var showTrailerPlayer by remember { mutableStateOf(false) }
+
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = CinemaRed.copy(0.1f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, CinemaRed),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                            .padding(bottom = 16.dp)
+                            .clickable { showTrailerPlayer = true }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(vertical = 12.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Rounded.PlayArrow, contentDescription = null, tint = CinemaRed, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Tonton Trailer", color = CinemaRed, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    if (showTrailerPlayer) {
+                        FullscreenLandscapePlayer(videoId = videoId, onClose = { showTrailerPlayer = false })
+                    }
                 }
             }
 
@@ -202,7 +258,7 @@ fun MovieDetailScreen(
             }
 
             // Cinema section
-            if (movie.isNowShowing) {
+            if (movie.status == "NOW_SHOWING") {
                 item {
                     Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 20.dp)) {
                         HorizontalDivider(color = DarkSurfaceVariant)
@@ -266,6 +322,7 @@ fun MovieDetailScreen(
                     )
                 }
             } else {
+                val isComing = movie.status == "COMING_SOON"
                 item {
                     Box(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp)
@@ -273,14 +330,31 @@ fun MovieDetailScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Rounded.Schedule, contentDescription = null, tint = CinemaRed, modifier = Modifier.size(56.dp))
+                            Icon(
+                                imageVector = if (isComing) Icons.Rounded.Schedule else Icons.Rounded.EventBusy,
+                                contentDescription = null,
+                                tint = if (isComing) CinemaRed else TextDisabled,
+                                modifier = Modifier.size(56.dp)
+                            )
                             Spacer(modifier = Modifier.height(12.dp))
-                            Text("Film Ini Segera Tayang", color = TextPrimary, fontSize = 16.sp,
-                                fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+                            Text(
+                                text = if (isComing) "Film Ini Segera Tayang" else "Film Ini Sudah Tidak Tayang",
+                                color = TextPrimary,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                textAlign = TextAlign.Center
+                            )
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                "Film ${movie.title} (${movie.year}) akan segera hadir di bioskop LayarDigi. Nantikan jadwal tayangnya!",
-                                color = TextSecondary, fontSize = 13.sp, textAlign = TextAlign.Center, lineHeight = 20.sp
+                                text = if (isComing) {
+                                    "Film ${movie.title} (${movie.year}) akan segera hadir di bioskop LayarDigi. Nantikan jadwal tayangnya!"
+                                } else {
+                                    "Film ${movie.title} (${movie.year}) sudah tidak tersedia di bioskop LayarDigi."
+                                },
+                                color = TextSecondary,
+                                fontSize = 13.sp,
+                                textAlign = TextAlign.Center,
+                                lineHeight = 20.sp
                             )
                         }
                     }
@@ -289,7 +363,7 @@ fun MovieDetailScreen(
         }
 
         // Bottom booking bar
-        if (movie.isNowShowing) {
+        if (movie.status == "NOW_SHOWING") {
             val canBook = selectedCinema != null && selectedShowtime.isNotEmpty()
             Box(
                 modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
@@ -338,4 +412,240 @@ fun InfoStatIcon(icon: androidx.compose.ui.graphics.vector.ImageVector, value: S
 @Composable
 fun VerticalDivider() {
     Box(modifier = Modifier.width(1.dp).height(40.dp).background(DarkSurfaceVariant))
+}
+
+fun extractYoutubeVideoId(url: String): String? {
+    if (url.isBlank()) return null
+    return try {
+        if (url.contains("v=")) {
+            url.substringAfter("v=").substringBefore("&")
+        } else if (url.contains("youtu.be/")) {
+            url.substringAfter("youtu.be/").substringBefore("?").substringBefore("/")
+        } else if (url.contains("embed/")) {
+            url.substringAfter("embed/").substringBefore("?")
+        } else {
+            url.trim()
+        }
+    } catch (e: java.lang.Exception) {
+        null
+    }
+}
+
+@Composable
+fun FullscreenLandscapePlayer(videoId: String, onClose: () -> Unit) {
+    val context = LocalContext.current
+    DisposableEffect(Unit) {
+        val activity = context as? Activity
+        val originalOrientation = activity?.requestedOrientation ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        onDispose {
+            activity?.requestedOrientation = originalOrientation
+        }
+    }
+
+    Dialog(
+        onDismissRequest = onClose,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            dismissOnBackPress = true,
+            dismissOnClickOutside = false
+        )
+    ) {
+        var ytPlayer by remember { mutableStateOf<YouTubePlayer?>(null) }
+        var isPlaying by remember { mutableStateOf(true) }
+        var currentSecond by remember { mutableStateOf(0f) }
+        var totalDuration by remember { mutableStateOf(0f) }
+
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+            val playerView = remember(videoId) {
+                YouTubePlayerView(context).apply {
+                    val options = IFramePlayerOptions.Builder()
+                        .controls(0)
+                        .autoplay(1)
+                        .build()
+                    initialize(object : AbstractYouTubePlayerListener() {
+                        override fun onReady(youTubePlayer: YouTubePlayer) {
+                            ytPlayer = youTubePlayer
+                            youTubePlayer.loadVideo(videoId, 0f)
+                        }
+
+                        override fun onCurrentSecond(youTubePlayer: YouTubePlayer, second: Float) {
+                            currentSecond = second
+                        }
+
+                        override fun onVideoDuration(youTubePlayer: YouTubePlayer, duration: Float) {
+                            totalDuration = duration
+                        }
+
+                        override fun onStateChange(
+                            youTubePlayer: YouTubePlayer,
+                            state: PlayerConstants.PlayerState
+                        ) {
+                            if (state == PlayerConstants.PlayerState.ENDED) {
+                                onClose()
+                            } else if (state == PlayerConstants.PlayerState.PLAYING) {
+                                isPlaying = true
+                            } else if (state == PlayerConstants.PlayerState.PAUSED) {
+                                isPlaying = false
+                            }
+                        }
+                    }, options)
+                }
+            }
+
+            DisposableEffect(playerView) {
+                onDispose {
+                    playerView.release()
+                }
+            }
+
+            AndroidView(
+                factory = { playerView },
+                modifier = Modifier.fillMaxSize()
+            )
+
+            // Custom Player Overlay
+            var showControls by remember { mutableStateOf(true) }
+            LaunchedEffect(showControls) {
+                if (showControls) {
+                    delay(3000)
+                    showControls = false
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable { showControls = !showControls }
+            ) {
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = showControls,
+                    enter = androidx.compose.animation.fadeIn(),
+                    exit = androidx.compose.animation.fadeOut()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(0.4f))
+                    ) {
+                        // Top Header (Back Button)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                                .align(Alignment.TopStart),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(
+                                onClick = onClose,
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .background(Color.Black.copy(0.5f), CircleShape)
+                            ) {
+                                Icon(Icons.Rounded.ArrowBack, contentDescription = "Close", tint = Color.White)
+                            }
+                        }
+
+                        // Center Controls (Prev 10s, Play/Pause, Skip 10s)
+                        Row(
+                            modifier = Modifier.align(Alignment.Center),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(32.dp)
+                        ) {
+                            IconButton(
+                                onClick = { ytPlayer?.seekTo(maxOf(0f, currentSecond - 10f)) },
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .background(Color.Black.copy(0.5f), CircleShape)
+                            ) {
+                                Icon(Icons.Rounded.FastRewind, contentDescription = "Rewind 10s", tint = Color.White, modifier = Modifier.size(28.dp))
+                            }
+
+                            IconButton(
+                                onClick = {
+                                    if (isPlaying) {
+                                        ytPlayer?.pause()
+                                    } else {
+                                        ytPlayer?.play()
+                                    }
+                                },
+                                modifier = Modifier
+                                    .size(68.dp)
+                                    .background(CinemaRed, CircleShape)
+                            ) {
+                                Icon(
+                                    imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                                    contentDescription = if (isPlaying) "Pause" else "Play",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(36.dp)
+                                )
+                            }
+
+                            IconButton(
+                                onClick = { ytPlayer?.seekTo(minOf(totalDuration, currentSecond + 10f)) },
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .background(Color.Black.copy(0.5f), CircleShape)
+                            ) {
+                                Icon(Icons.Rounded.FastForward, contentDescription = "Forward 10s", tint = Color.White, modifier = Modifier.size(28.dp))
+                            }
+                        }
+
+                        // Bottom Seekbar (Timeline Slider + Time Stamp)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.BottomCenter)
+                                .background(
+                                    Brush.verticalGradient(
+                                        listOf(Color.Transparent, Color.Black.copy(0.8f))
+                                    )
+                                )
+                                .padding(horizontal = 24.dp, vertical = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            fun formatTime(seconds: Float): String {
+                                val mins = (seconds / 60).toInt()
+                                val secs = (seconds % 60).toInt()
+                                return String.format("%02d:%02d", mins, secs)
+                            }
+
+                            Text(
+                                text = formatTime(currentSecond),
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            Slider(
+                                value = currentSecond,
+                                onValueChange = { seekTime ->
+                                    currentSecond = seekTime
+                                    ytPlayer?.seekTo(seekTime)
+                                },
+                                valueRange = 0f..maxOf(1f, totalDuration),
+                                colors = SliderDefaults.colors(
+                                    thumbColor = CinemaRed,
+                                    activeTrackColor = CinemaRed,
+                                    inactiveTrackColor = Color.White.copy(0.3f)
+                                ),
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            Text(
+                                text = formatTime(totalDuration),
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

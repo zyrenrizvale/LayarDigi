@@ -58,6 +58,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.database)
+    implementation("com.pierfrancescosoffritti.androidyoutubeplayer:core:12.1.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

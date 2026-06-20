@@ -38,13 +38,14 @@ fun MovieFormScreen(navController: NavController, movieId: String?) {
     var rating by remember { mutableStateOf(initialMovie?.rating?.toString() ?: "") }
     var duration by remember { mutableStateOf(initialMovie?.duration?.toString() ?: "") }
     var director by remember { mutableStateOf(initialMovie?.director ?: "") }
-    var isNowShowing by remember { mutableStateOf(initialMovie?.isNowShowing ?: true) }
+    var status by remember { mutableStateOf(initialMovie?.status ?: "NOW_SHOWING") }
     var language by remember { mutableStateOf(initialMovie?.language ?: "Indonesia") }
     var ageRating by remember { mutableStateOf(initialMovie?.ageRating ?: "13+") }
     var cast by remember { mutableStateOf(initialMovie?.cast?.joinToString(", ") ?: "") }
     var availableCinemas by remember { mutableStateOf(initialMovie?.availableCinemas?.joinToString(", ") ?: "") }
     var selectedGenres by remember { mutableStateOf(initialMovie?.genre ?: emptyList()) }
     var year by remember { mutableStateOf(initialMovie?.year?.toString() ?: "2026") }
+    var trailerUrl by remember { mutableStateOf(initialMovie?.trailerUrl ?: "") }
 
     Column(
         modifier = Modifier
@@ -103,6 +104,7 @@ fun MovieFormScreen(navController: NavController, movieId: String?) {
             FormTextField(label = "Pemeran (Pisahkan dengan koma)", value = cast, onValueChange = { cast = it })
             FormTextField(label = "ID Cabang (Pisahkan dengan koma)", value = availableCinemas, onValueChange = { availableCinemas = it })
             FormTextField(label = "Tahun Rilis", value = year, onValueChange = { year = it }, keyboardType = KeyboardType.Number)
+            FormTextField(label = "Trailer YouTube (Link atau ID)", value = trailerUrl, onValueChange = { trailerUrl = it })
 
             Text("Pilih Genre", color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
             @OptIn(ExperimentalLayoutApi::class)
@@ -148,18 +150,40 @@ fun MovieFormScreen(navController: NavController, movieId: String?) {
                 modifier = Modifier.height(150.dp)
             )
 
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 12.dp)) {
-                Text("Sedang Tayang", color = TextPrimary, fontSize = 15.sp, modifier = Modifier.weight(1f))
-                Switch(
-                    checked = isNowShowing,
-                    onCheckedChange = { isNowShowing = it },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.White,
-                        checkedTrackColor = CinemaRed,
-                        uncheckedThumbColor = TextSecondary,
-                        uncheckedTrackColor = DarkSurfaceVariant
-                    )
+            Text("Status Film", color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val statuses = listOf(
+                    "COMING_SOON" to "Akan Tayang",
+                    "NOW_SHOWING" to "Sedang Tayang",
+                    "FINISHED" to "Telah Tayang"
                 )
+                statuses.forEach { (statusKey, statusLabel) ->
+                    val isSelected = status == statusKey
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (isSelected) CinemaRed.copy(0.2f) else DarkCard,
+                        border = BorderStroke(
+                            1.dp,
+                            if (isSelected) CinemaRed else DarkSurfaceVariant
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { status = statusKey }
+                    ) {
+                        Text(
+                            text = statusLabel,
+                            color = if (isSelected) CinemaRed else TextSecondary,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            modifier = Modifier.padding(vertical = 12.dp)
+                        )
+                    }
+                }
             }
             
             Spacer(modifier = Modifier.height(40.dp))
@@ -182,12 +206,13 @@ fun MovieFormScreen(navController: NavController, movieId: String?) {
                         duration = duration.toIntOrNull() ?: 120,
                         synopsis = synopsis.takeIf { it.isNotBlank() } ?: "-",
                         posterUrl = posterUrl.takeIf { it.isNotBlank() } ?: "",
-                        isNowShowing = isNowShowing,
+                        status = status,
                         year = year.toIntOrNull() ?: 2026,
                         director = director.takeIf { it.isNotBlank() } ?: "-",
                         cast = cast.split(",").map { it.trim() }.filter { it.isNotEmpty() },
                         language = language.takeIf { it.isNotBlank() } ?: "Indonesia",
                         ageRating = ageRating.takeIf { it.isNotBlank() } ?: "13+",
+                        trailerUrl = trailerUrl,
                         availableCinemas = availableCinemas.split(",").map { it.trim() }.filter { it.isNotEmpty() }
                     )
                     

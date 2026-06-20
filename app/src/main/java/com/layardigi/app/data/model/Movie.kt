@@ -8,11 +8,12 @@ data class Movie(
     val duration: Int, // dalam menit
     val synopsis: String,
     val posterUrl: String,
-    val isNowShowing: Boolean,
+    val status: String,
     val year: Int,
     val director: String,
     val cast: List<String>,
     val language: String,
     val ageRating: String,
+    val trailerUrl: String = "",
     val availableCinemas: List<String> = emptyList()
 )
