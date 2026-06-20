@@ -481,7 +481,7 @@ fun FullscreenLandscapePlayer(videoId: String, onClose: () -> Unit) {
                 }
             }
 
-            val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+            val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
             DisposableEffect(playerView, lifecycleOwner) {
                 lifecycleOwner.lifecycle.addObserver(playerView)
                 onDispose {
