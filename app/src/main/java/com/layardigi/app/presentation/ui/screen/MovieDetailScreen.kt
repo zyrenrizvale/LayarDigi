@@ -495,8 +495,9 @@ fun FullscreenLandscapePlayer(videoId: String?, directUrl: String?, onClose: () 
                         webChromeClient = android.webkit.WebChromeClient()
                         loadUrl("https://m.youtube.com/watch?v=${videoId}")
                     }
-                },
-                onRelease = { view ->
+                }
+            },
+            onRelease = { view ->
                     if (view is android.webkit.WebView) {
                         view.destroy()
                     } else if (view is android.widget.VideoView) {

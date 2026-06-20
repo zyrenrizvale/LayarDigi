@@ -218,8 +218,9 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
                                 }
                                 loadUrl("https://m.youtube.com/watch?v=${videoId}")
                             }
-                        },
-                        onRelease = { view ->
+                        }
+                    },
+                    onRelease = { view ->
                             if (view is android.webkit.WebView) {
                                 view.destroy()
                             } else if (view is android.widget.VideoView) {
