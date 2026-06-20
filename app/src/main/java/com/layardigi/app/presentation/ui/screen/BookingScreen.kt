@@ -51,25 +51,9 @@ fun BookingScreen(
     Box(modifier = Modifier.fillMaxSize().background(DarkBackground)) {
         LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 120.dp)) {
 
-            // Top Bar
+            // Back button (floating)
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth()
-                        .padding(top = 52.dp, start = 16.dp, end = 16.dp, bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(
-                        onClick = { navController.popBackStack() },
-                        modifier = Modifier.size(42.dp).background(DarkCard, CircleShape)
-                    ) {
-                        Icon(Icons.Rounded.ArrowBackIos, "Kembali", tint = TextPrimary, modifier = Modifier.size(18.dp))
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text("Pilih Kursi", color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        Text("${uiState.movie?.title} • $showtime", color = TextSecondary, fontSize = 12.sp)
-                    }
-                }
+                Spacer(modifier = Modifier.height(52.dp))
             }
 
             // Cinema info bar

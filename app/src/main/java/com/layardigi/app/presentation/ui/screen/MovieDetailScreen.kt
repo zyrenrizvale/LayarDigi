@@ -28,6 +28,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.layardigi.app.data.model.Cinema
+import com.google.firebase.database.FirebaseDatabase
+import com.layardigi.app.data.repository.AuthRepository
 import com.layardigi.app.navigation.Screen
 import com.layardigi.app.presentation.ui.component.CinemaCard
 import com.layardigi.app.presentation.viewmodel.MovieDetailViewModel
@@ -54,6 +56,14 @@ fun MovieDetailScreen(
     LaunchedEffect(movieId) { viewModel.loadMovie(movieId) }
 
     val movie = uiState.movie ?: return
+    val username by AuthRepository.currentUsername.collectAsState()
+    var isFavorite by remember { mutableStateOf(false) }
+
+    LaunchedEffect(movieId, username) {
+        val u = username ?: return@LaunchedEffect
+        FirebaseDatabase.getInstance().getReference("favorites").child(u).child(movieId).get()
+            .addOnSuccessListener { isFavorite = it.exists() }
+    }
 
     Box(modifier = Modifier.fillMaxSize().background(DarkBackground)) {
         LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 100.dp)) {
@@ -71,15 +81,34 @@ fun MovieDetailScreen(
                         Brush.verticalGradient(listOf(Color.Transparent, DarkBackground.copy(0.55f), DarkBackground))
                     ))
 
-                    // Back button
-                    IconButton(
-                        onClick = { navController.popBackStack() },
-                        modifier = Modifier
-                            .padding(top = 48.dp, start = 12.dp)
-                            .size(42.dp)
-                            .background(DarkBackground.copy(0.6f), CircleShape)
+                    // Back + Favorite buttons
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 48.dp, start = 12.dp, end = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Icon(Icons.Rounded.ArrowBackIos, "Kembali", tint = TextPrimary, modifier = Modifier.size(18.dp))
+                        IconButton(
+                            onClick = { navController.popBackStack() },
+                            modifier = Modifier.size(42.dp).background(DarkBackground.copy(0.6f), CircleShape)
+                        ) {
+                            Icon(Icons.Rounded.ArrowBackIos, "Kembali", tint = TextPrimary, modifier = Modifier.size(18.dp))
+                        }
+                        if (username != null) {
+                            IconButton(
+                                onClick = {
+                                    val u = username ?: return@IconButton
+                                    val ref = FirebaseDatabase.getInstance().getReference("favorites").child(u).child(movieId)
+                                    if (isFavorite) ref.removeValue() else ref.setValue(true)
+                                    isFavorite = !isFavorite
+                                },
+                                modifier = Modifier.size(42.dp).background(DarkBackground.copy(0.6f), CircleShape)
+                            ) {
+                                Icon(
+                                    if (isFavorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                                    "Favorit", tint = if (isFavorite) CinemaRed else TextPrimary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
                     }
 
                     // Not showing badge

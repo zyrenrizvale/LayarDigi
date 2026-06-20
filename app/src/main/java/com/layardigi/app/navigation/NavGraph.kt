@@ -31,47 +31,44 @@ sealed class Screen(val route: String) {
 fun NavGraph(navController: NavHostController) {
     NavHost(
         navController = navController,
-        startDestination = "white_screen"
+        startDestination = Screen.Splash.route
     ) {
-        composable("white_screen") {
-            WhiteScreen(navController = navController)
-        }
-
+        // Splash
         composable(Screen.Splash.route) {
             SplashScreen(navController = navController)
         }
 
-        composable(Screen.Home.route) {
-            HomeScreen(navController = navController)
-        }
+        // Main tabs
+        composable(Screen.Home.route) { HomeScreen(navController = navController) }
+        composable("search_tab") { SearchScreen(navController = navController) }
+        composable("my_tickets_tab") { MyTicketsScreen() }
+        composable("favorites_tab") { FavoritesScreen(navController = navController) }
+        composable("profile_tab") { ProfileScreen(navController = navController) }
 
-        // Bottom nav tab stubs
-        composable("search_tab") {
-            SearchScreen(navController = navController)
-        }
-        composable("cinemas_tab") {
-            CinemasScreen(navController = navController)
-        }
-        composable("profile_tab") {
-            ProfileScreen(navController = navController)
-        }
+        // Auth
+        composable("login") { LoginScreen(navController = navController) }
+        composable("register") { RegisterScreen(navController = navController) }
 
+        // Admin
+        composable("admin_dashboard") { AdminDashboardScreen(navController = navController) }
+
+        // Movie Form
         composable(
             route = "movie_form?movieId={movieId}",
             arguments = listOf(navArgument("movieId") { type = NavType.StringType; nullable = true })
         ) { backStackEntry ->
-            val movieId = backStackEntry.arguments?.getString("movieId")
-            MovieFormScreen(navController = navController, movieId = movieId)
+            MovieFormScreen(navController = navController, movieId = backStackEntry.arguments?.getString("movieId"))
         }
 
+        // Cinema Form
         composable(
             route = "cinema_form?cinemaId={cinemaId}",
             arguments = listOf(navArgument("cinemaId") { type = NavType.StringType; nullable = true })
         ) { backStackEntry ->
-            val cinemaId = backStackEntry.arguments?.getString("cinemaId")
-            CinemaFormScreen(navController = navController, cinemaId = cinemaId)
+            CinemaFormScreen(navController = navController, cinemaId = backStackEntry.arguments?.getString("cinemaId"))
         }
 
+        // Movie Detail
         composable(
             route = Screen.MovieDetail.route,
             arguments = listOf(navArgument("movieId") { type = NavType.StringType })
@@ -82,6 +79,7 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
+        // Booking
         composable(
             route = Screen.Booking.route,
             arguments = listOf(
@@ -98,6 +96,7 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
+        // Checkout
         composable(
             route = Screen.Checkout.route,
             arguments = listOf(
@@ -120,6 +119,7 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
+        // Ticket Success
         composable(
             route = Screen.TicketSuccess.route,
             arguments = listOf(navArgument("bookingCode") { type = NavType.StringType })
@@ -130,17 +130,22 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
-        composable("login") {
-            LoginScreen(navController = navController)
+        // Notifications
+        composable("notifications") { NotificationsScreen(navController = navController) }
+
+        // Announcement Detail
+        composable(
+            route = "announcement_detail/{announcementId}",
+            arguments = listOf(navArgument("announcementId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            AnnouncementDetailScreen(announcementId = backStackEntry.arguments?.getString("announcementId") ?: "")
         }
 
-        composable("register") {
-            RegisterScreen(navController = navController)
-        }
-
-        composable("admin_dashboard") {
-            AdminDashboardScreen(navController = navController)
-        }
-
+        // Profile sub-pages (stubs)
+        composable("security") { SimpleInfoScreen("Keamanan", "Fitur ini segera hadir") }
+        composable("help") { SimpleInfoScreen("Bantuan", "Hubungi kami di support@layardigi.id") }
+        composable("about") { SimpleInfoScreen("Tentang Aplikasi", "LayarDigi v2.0\nBioskop Digital Indonesia\n© 2026 LayarDigi") }
+        composable("my_tickets") { MyTicketsScreen() }
+        composable("favorites") { FavoritesScreen(navController = navController) }
     }
 }

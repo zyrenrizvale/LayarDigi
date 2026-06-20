@@ -3,9 +3,10 @@ package com.layardigi.app.presentation.ui.screen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBackIos
 import androidx.compose.material.icons.rounded.Lock
@@ -41,28 +42,17 @@ fun LoginScreen(navController: NavController) {
             .fillMaxSize()
             .background(DarkBackground)
             .statusBarsPadding()
+            .imePadding()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp)
     ) {
         Spacer(modifier = Modifier.height(16.dp))
-        
-        IconButton(
-            onClick = { navController.popBackStack() },
-            modifier = Modifier
-                .size(42.dp)
-                .background(DarkCard, CircleShape)
-        ) {
-            Icon(Icons.Rounded.ArrowBackIos, "Kembali", tint = TextPrimary, modifier = Modifier.size(18.dp))
-        }
 
         Spacer(modifier = Modifier.height(40.dp))
 
         Box(
-            modifier = Modifier
-                .size(72.dp)
-                .background(
-                    Brush.linearGradient(listOf(CinemaRed, CinemaRedDark)),
-                    RoundedCornerShape(20.dp)
-                ),
+            modifier = Modifier.size(72.dp)
+                .background(Brush.linearGradient(listOf(CinemaRed, CinemaRedDark)), RoundedCornerShape(20.dp)),
             contentAlignment = Alignment.Center
         ) {
             Icon(Icons.Rounded.Theaters, contentDescription = null, tint = Color.White, modifier = Modifier.size(40.dp))
@@ -82,12 +72,9 @@ fun LoginScreen(navController: NavController) {
             leadingIcon = { Icon(Icons.Rounded.Person, contentDescription = null, tint = TextSecondary) },
             modifier = Modifier.fillMaxWidth(),
             colors = TextFieldDefaults.outlinedTextFieldColors(
-                focusedBorderColor = CinemaRed,
-                unfocusedBorderColor = DarkSurfaceVariant,
-                containerColor = DarkCard
+                focusedBorderColor = CinemaRed, unfocusedBorderColor = DarkSurfaceVariant, containerColor = DarkCard
             ),
-            shape = RoundedCornerShape(14.dp),
-            singleLine = true
+            shape = RoundedCornerShape(14.dp), singleLine = true
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -101,12 +88,9 @@ fun LoginScreen(navController: NavController) {
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             colors = TextFieldDefaults.outlinedTextFieldColors(
-                focusedBorderColor = CinemaRed,
-                unfocusedBorderColor = DarkSurfaceVariant,
-                containerColor = DarkCard
+                focusedBorderColor = CinemaRed, unfocusedBorderColor = DarkSurfaceVariant, containerColor = DarkCard
             ),
-            shape = RoundedCornerShape(14.dp),
-            singleLine = true
+            shape = RoundedCornerShape(14.dp), singleLine = true
         )
 
         if (errorMsg.isNotEmpty()) {
@@ -119,62 +103,40 @@ fun LoginScreen(navController: NavController) {
         Button(
             onClick = {
                 if (username.isBlank() || password.isBlank()) {
-                    errorMsg = "Username dan password tidak boleh kosong"
-                    return@Button
+                    errorMsg = "Username dan password tidak boleh kosong"; return@Button
                 }
-
                 if (username == "admin123" && password == "passadmin") {
                     AuthRepository.login(username, Role.ADMIN)
-                    navController.popBackStack()
-                    return@Button
+                    navController.popBackStack(); return@Button
                 }
-
                 isLoading = true
-                val db = FirebaseDatabase.getInstance().getReference("users")
-                
-                db.child(username).get().addOnSuccessListener { snapshot ->
-                    isLoading = false
-                    if (snapshot.exists()) {
-                        val dbPassword = snapshot.child("password").getValue(String::class.java)
-                        if (dbPassword == password) {
-                            AuthRepository.login(username, Role.USER)
-                            navController.popBackStack()
-                        } else {
-                            errorMsg = "Password salah"
-                        }
-                    } else {
-                        errorMsg = "Username tidak ditemukan"
-                    }
-                }.addOnFailureListener {
-                    isLoading = false
-                    errorMsg = "Terjadi kesalahan koneksi"
-                }
+                FirebaseDatabase.getInstance().getReference("users").child(username).get()
+                    .addOnSuccessListener { snapshot ->
+                        isLoading = false
+                        if (snapshot.exists()) {
+                            val dbPass = snapshot.child("password").getValue(String::class.java)
+                            if (dbPass == password) {
+                                AuthRepository.login(username, Role.USER)
+                                navController.popBackStack()
+                            } else errorMsg = "Password salah"
+                        } else errorMsg = "Username tidak ditemukan"
+                    }.addOnFailureListener { isLoading = false; errorMsg = "Kesalahan koneksi" }
             },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
+            modifier = Modifier.fillMaxWidth().height(56.dp),
             colors = ButtonDefaults.buttonColors(containerColor = CinemaRed),
-            shape = RoundedCornerShape(16.dp),
-            enabled = !isLoading
+            shape = RoundedCornerShape(16.dp), enabled = !isLoading
         ) {
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
-            } else {
-                Text("Masuk", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            }
+            if (isLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+            else Text("Masuk", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
             Text("Belum punya akun? ", color = TextSecondary, fontSize = 14.sp)
-            Text(
-                text = "Daftar",
-                color = CinemaRed,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.clickable { navController.navigate("register") }
-            )
+            Text("Daftar", color = CinemaRed, fontSize = 14.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable { navController.navigate("register") })
         }
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }

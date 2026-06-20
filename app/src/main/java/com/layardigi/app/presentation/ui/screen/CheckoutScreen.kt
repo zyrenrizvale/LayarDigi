@@ -1,5 +1,7 @@
 package com.layardigi.app.presentation.ui.screen
 
+import android.app.NotificationManager
+import android.content.Context
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,12 +19,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.NotificationCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.google.firebase.database.FirebaseDatabase
+import com.layardigi.app.LayarDigiApp
+import com.layardigi.app.data.repository.AuthRepository
 import com.layardigi.app.navigation.Screen
 import com.layardigi.app.presentation.ui.component.PaymentMethodCard
 import com.layardigi.app.presentation.viewmodel.CheckoutViewModel
@@ -41,12 +48,40 @@ fun CheckoutScreen(
     viewModel: CheckoutViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val username by AuthRepository.currentUsername.collectAsState()
+    val context = LocalContext.current
 
     LaunchedEffect(movieId, cinemaId, date, showtime, seatIds, total) {
         viewModel.loadCheckoutData(movieId, cinemaId, date, showtime, seatIds, total)
     }
     LaunchedEffect(uiState.paymentStatus) {
         if (uiState.paymentStatus == PaymentStatus.SUCCESS) {
+            // Save ticket to Firebase
+            val user = username ?: "guest"
+            val ticketRef = FirebaseDatabase.getInstance().getReference("tickets").child(user).push()
+            ticketRef.setValue(mapOf(
+                "bookingCode" to uiState.bookingCode,
+                "movieTitle" to (uiState.movie?.title ?: ""),
+                "cinemaName" to (uiState.cinema?.name ?: ""),
+                "date" to date,
+                "showtime" to showtime,
+                "seats" to seatIds,
+                "total" to total,
+                "posterUrl" to (uiState.movie?.posterUrl ?: ""),
+                "timestamp" to System.currentTimeMillis()
+            ))
+
+            // Local notification
+            val notif = NotificationCompat.Builder(context, LayarDigiApp.NOTIF_CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle("Pemesanan Berhasil! 🎬")
+                .setContentText("${uiState.movie?.title} • ${uiState.bookingCode}")
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .build()
+            val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            nm.notify(System.currentTimeMillis().toInt(), notif)
+
             navController.navigate(Screen.TicketSuccess.createRoute(uiState.bookingCode)) {
                 popUpTo(Screen.Home.route)
             }
@@ -56,22 +91,8 @@ fun CheckoutScreen(
     Box(modifier = Modifier.fillMaxSize().background(DarkBackground)) {
         LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 120.dp)) {
 
-            // Top Bar
-            item {
-                Row(modifier = Modifier.fillMaxWidth()
-                    .padding(top = 52.dp, start = 16.dp, end = 16.dp, bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { navController.popBackStack() },
-                        modifier = Modifier.size(42.dp).background(DarkCard, CircleShape)) {
-                        Icon(Icons.Rounded.ArrowBackIos, "Kembali", tint = TextPrimary, modifier = Modifier.size(18.dp))
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text("Konfirmasi Pembayaran", color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        Text("Langkah terakhir", color = TextSecondary, fontSize = 12.sp)
-                    }
-                }
-            }
+            // Top spacing
+            item { Spacer(modifier = Modifier.height(52.dp)) }
 
             // Order Summary
             item {

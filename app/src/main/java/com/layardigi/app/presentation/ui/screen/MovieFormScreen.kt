@@ -47,30 +47,9 @@ fun MovieFormScreen(navController: NavController, movieId: String?) {
             .fillMaxSize()
             .background(DarkBackground)
             .statusBarsPadding()
+            .imePadding()
     ) {
-        // Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(
-                onClick = { navController.popBackStack() },
-                modifier = Modifier
-                    .size(42.dp)
-                    .background(DarkCard, CircleShape)
-            ) {
-                Icon(Icons.Rounded.ArrowBackIos, "Kembali", tint = TextPrimary, modifier = Modifier.size(18.dp))
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column {
-                Text(
-                    text = if (isEditMode) "Edit Film" else "Tambah Film",
-                    color = TextPrimary, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold
-                )
-            }
-        }
+        Spacer(modifier = Modifier.height(16.dp))
 
         Column(
             modifier = Modifier

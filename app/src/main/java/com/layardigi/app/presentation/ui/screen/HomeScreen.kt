@@ -1,17 +1,15 @@
 package com.layardigi.app.presentation.ui.screen
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
@@ -21,9 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,9 +34,6 @@ import com.layardigi.app.presentation.ui.component.MovieCard
 import com.layardigi.app.presentation.ui.component.MovieCardWide
 import com.layardigi.app.presentation.viewmodel.HomeViewModel
 import com.layardigi.app.ui.theme.*
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.ExperimentalFoundationApi
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -56,134 +49,72 @@ fun HomeScreen(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 16.dp)
         ) {
-            // Top Bar
-            item { HomeTopBar(
-                searchQuery = uiState.searchQuery,
-                onSearchChange = viewModel::onSearchQueryChange,
-                onClearSearch = viewModel::clearSearch,
-                onSearchClick = { navController.navigate("search_tab") }
-            ) }
+            // Slideshow Hero Banner
+            item {
+                HeroBanner(
+                    movies = uiState.nowShowingMovies,
+                    onMovieClick = { navController.navigate(Screen.MovieDetail.createRoute(it.id)) }
+                )
+            }
 
-            if (uiState.isSearching) {
-                item { SearchResultsSection(movies = uiState.filteredMovies,
-                    onMovieClick = { navController.navigate(Screen.MovieDetail.createRoute(it.id)) }) }
-            } else {
-                item { HeroBanner(movies = uiState.nowShowingMovies,
-                    onMovieClick = { navController.navigate(Screen.MovieDetail.createRoute(it.id)) }) }
+            // Sedang Tayang
+            item { SectionHeader(title = "Sedang Tayang", subtitle = "${uiState.nowShowingMovies.size} film") }
+            item {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(uiState.nowShowingMovies) { movie ->
+                        MovieCard(movie = movie,
+                            onClick = { navController.navigate(Screen.MovieDetail.createRoute(movie.id)) })
+                    }
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+            }
 
-                item { SectionHeader(title = "Sedang Tayang", subtitle = "${uiState.nowShowingMovies.size} film") }
+            // Akan Tayang
+            if (uiState.classicMovies.isNotEmpty()) {
+                item { SectionHeader(title = "Akan Tayang", subtitle = "Segera hadir di bioskop") }
                 item {
                     LazyRow(
                         contentPadding = PaddingValues(horizontal = 20.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(uiState.nowShowingMovies) { movie ->
-                            MovieCard(movie = movie,
+                        items(uiState.classicMovies.take(6)) { movie ->
+                            UpcomingMovieCard(movie = movie,
                                 onClick = { navController.navigate(Screen.MovieDetail.createRoute(movie.id)) })
                         }
                     }
-                    Spacer(modifier = Modifier.height(28.dp))
-                }
-
-                item { SectionHeader(title = "Film Klasik", subtitle = "Sudah tidak tayang") }
-                items(uiState.classicMovies) { movie ->
-                    MovieCardWide(
-                        movie = movie,
-                        onClick = { navController.navigate(Screen.MovieDetail.createRoute(movie.id)) },
-                        modifier = Modifier.padding(horizontal = 20.dp).padding(bottom = 12.dp)
-                    )
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
-        }
-    }
-}
 
-@Composable
-fun HomeTopBar(
-    searchQuery: String,
-    onSearchChange: (String) -> Unit,
-    onClearSearch: () -> Unit,
-    onSearchClick: () -> Unit = {}
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 52.dp, start = 20.dp, end = 20.dp, bottom = 16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text("LayarDigi", color = TextPrimary, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.5.sp)
-                Text("Bioskop Digital Indonesia", color = TextSecondary, fontSize = 13.sp)
-            }
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .background(Brush.linearGradient(listOf(CinemaRed, CinemaRedDark)), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Rounded.Person, contentDescription = "Profil", tint = Color.White, modifier = Modifier.size(24.dp))
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Search bar (navigates to search tab)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(DarkCard)
-                .clickable { onSearchClick() }
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(Icons.Rounded.Search, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(20.dp))
-            Spacer(modifier = Modifier.width(10.dp))
-
-            if (uiState_isSearching(searchQuery)) {
-                BasicTextField(
-                    value = searchQuery,
-                    onValueChange = onSearchChange,
-                    modifier = Modifier.weight(1f),
-                    textStyle = TextStyle(color = TextPrimary, fontSize = 15.sp),
-                    cursorBrush = SolidColor(CinemaRed),
-                    singleLine = true,
-                    decorationBox = { inner ->
-                        if (searchQuery.isEmpty()) Text("Cari film, genre, sutradara...", color = TextDisabled, fontSize = 15.sp)
-                        inner()
-                    }
+            // Semua Film
+            item { SectionHeader(title = "Semua Film", subtitle = "Koleksi lengkap LayarDigi") }
+            items(uiState.classicMovies) { movie ->
+                MovieCardWide(
+                    movie = movie,
+                    onClick = { navController.navigate(Screen.MovieDetail.createRoute(movie.id)) },
+                    modifier = Modifier.padding(horizontal = 20.dp).padding(bottom = 12.dp)
                 )
-                AnimatedVisibility(visible = searchQuery.isNotEmpty(), enter = fadeIn(), exit = fadeOut()) {
-                    Icon(
-                        Icons.Rounded.Close, contentDescription = "Hapus",
-                        tint = TextSecondary, modifier = Modifier.size(18.dp).clickable { onClearSearch() }
-                    )
-                }
-            } else {
-                Text("Cari film, genre, sutradara...", color = TextDisabled, fontSize = 15.sp, modifier = Modifier.weight(1f))
-                Icon(Icons.Rounded.Tune, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(18.dp))
             }
         }
     }
 }
-
-private fun uiState_isSearching(query: String) = true // always show text field
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
     if (movies.isEmpty()) return
-    
+
     val pagerState = rememberPagerState(pageCount = { movies.size })
 
-    LaunchedEffect(pagerState.currentPage) {
-        delay(4000)
-        val nextPage = (pagerState.currentPage + 1) % movies.size
-        pagerState.animateScrollToPage(nextPage)
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(4000)
+            val nextPage = (pagerState.currentPage + 1) % movies.size
+            pagerState.animateScrollToPage(nextPage)
+        }
     }
 
     Box(modifier = Modifier.fillMaxWidth().height(320.dp)) {
@@ -201,15 +132,9 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
                 ))
 
                 Column(modifier = Modifier.align(Alignment.BottomStart).padding(20.dp).padding(bottom = 20.dp)) {
-                    // Featured badge
-                    Surface(
-                        color = CinemaRed,
-                        shape = RoundedCornerShape(6.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                    Surface(color = CinemaRed, shape = RoundedCornerShape(6.dp)) {
+                        Row(modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Rounded.LocalFireDepartment, contentDescription = null, tint = Color.White, modifier = Modifier.size(12.dp))
                             Spacer(modifier = Modifier.width(4.dp))
                             Text("UNGGULAN", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
@@ -217,7 +142,7 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(film.title, color = TextPrimary, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 36.sp)
+                    Text(film.title, color = TextPrimary, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 32.sp, maxLines = 2)
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -228,24 +153,15 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
                         Text("•", color = TextSecondary)
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(film.genre.take(2).joinToString(" • "), color = TextSecondary, fontSize = 13.sp)
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text("•", color = TextSecondary)
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Icon(Icons.Rounded.Schedule, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(13.dp))
-                        Spacer(modifier = Modifier.width(3.dp))
-                        Text("${film.duration} min", color = TextSecondary, fontSize = 13.sp)
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = Color.Transparent,
+                        Surface(shape = RoundedCornerShape(12.dp), color = Color.Transparent,
                             modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(
                                 Brush.linearGradient(listOf(CinemaRed, CinemaRedDark))
-                            ).clickable { onMovieClick(film) }
-                        ) {
+                            ).clickable { onMovieClick(film) }) {
                             Row(modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Rounded.ConfirmationNumber, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
@@ -253,11 +169,8 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
                             }
                         }
 
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = DarkSurfaceVariant.copy(0.85f),
-                            modifier = Modifier.clickable { onMovieClick(film) }
-                        ) {
+                        Surface(shape = RoundedCornerShape(12.dp), color = DarkSurfaceVariant.copy(0.85f),
+                            modifier = Modifier.clickable { onMovieClick(film) }) {
                             Row(modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Rounded.Info, contentDescription = null, tint = TextPrimary, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
@@ -276,11 +189,38 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
                 val isSelected = pagerState.currentPage == i
                 val width by androidx.compose.animation.core.animateDpAsState(if (isSelected) 20.dp else 6.dp, label = "dotWidth")
                 val color by androidx.compose.animation.animateColorAsState(if (isSelected) CinemaRed else TextDisabled, label = "dotColor")
-                Box(modifier = Modifier
-                    .size(width, 6.dp)
-                    .background(color, RoundedCornerShape(3.dp)))
+                Box(modifier = Modifier.size(width, 6.dp).background(color, RoundedCornerShape(3.dp)))
             }
         }
+    }
+}
+
+@Composable
+fun UpcomingMovieCard(movie: Movie, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .width(140.dp)
+            .clickable { onClick() }
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .clip(RoundedCornerShape(14.dp))
+        ) {
+            AsyncImage(model = movie.posterUrl, contentDescription = movie.title,
+                contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            // "Akan Tayang" ribbon
+            Box(modifier = Modifier.align(Alignment.TopStart).padding(8.dp)
+                .background(Brush.linearGradient(listOf(CinemaRed.copy(0.9f), CinemaRedDark.copy(0.9f))), RoundedCornerShape(6.dp))
+                .padding(horizontal = 6.dp, vertical = 3.dp)) {
+                Text("SEGERA", color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(movie.title, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+            maxLines = 2, overflow = TextOverflow.Ellipsis, lineHeight = 17.sp)
+        Text(movie.genre.firstOrNull() ?: "", color = TextSecondary, fontSize = 11.sp)
     }
 }
 

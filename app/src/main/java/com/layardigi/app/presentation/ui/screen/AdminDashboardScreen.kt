@@ -3,6 +3,7 @@ package com.layardigi.app.presentation.ui.screen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.imePadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -46,38 +47,9 @@ fun AdminDashboardScreen(navController: NavController) {
             .background(DarkBackground)
             .statusBarsPadding()
     ) {
-        // Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(
-                onClick = { navController.popBackStack() },
-                modifier = Modifier
-                    .size(42.dp)
-                    .background(DarkCard, CircleShape)
-            ) {
-                Icon(Icons.Rounded.ArrowBackIos, "Kembali", tint = TextPrimary, modifier = Modifier.size(18.dp))
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text("Dashboard Admin", color = TextPrimary, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
-                Text("Kelola daftar film", color = TextSecondary, fontSize = 13.sp)
-            }
-            IconButton(
-                onClick = { navController.navigate("movie_form") },
-                modifier = Modifier
-                    .size(42.dp)
-                    .background(CinemaRed, CircleShape)
-            ) {
-                Icon(Icons.Rounded.Add, "Tambah Film", tint = Color.White, modifier = Modifier.size(24.dp))
-            }
-        }
+        Spacer(modifier = Modifier.height(52.dp))
 
-        Spacer(modifier = Modifier.height(8.dp))
-
+        // Tab for Films/Cinemas
         TabRow(
             selectedTabIndex = selectedTab,
             containerColor = DarkBackground,
@@ -93,6 +65,8 @@ fun AdminDashboardScreen(navController: NavController) {
                 text = { Text("Film", color = if (selectedTab == 0) CinemaRed else TextSecondary) })
             Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 },
                 text = { Text("Cabang", color = if (selectedTab == 1) CinemaRed else TextSecondary) })
+            Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 },
+                text = { Text("Pengumuman", color = if (selectedTab == 2) CinemaRed else TextSecondary) })
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -107,7 +81,7 @@ fun AdminDashboardScreen(navController: NavController) {
                     )
                 }
             }
-        } else {
+        } else if (selectedTab == 1) {
             LazyColumn(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)) {
                 item {
                     Button(
@@ -129,6 +103,8 @@ fun AdminDashboardScreen(navController: NavController) {
                     )
                 }
             }
+        } else {
+            AdminAnnouncementTab()
         }
     }
 }
@@ -250,6 +226,67 @@ fun AdminCinemaItem(
             ) {
                 Icon(Icons.Rounded.Delete, contentDescription = "Delete", tint = CinemaRed, modifier = Modifier.size(16.dp))
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AdminAnnouncementTab() {
+    var title by remember { mutableStateOf("") }
+    var body by remember { mutableStateOf("") }
+    var isPosting by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 8.dp).imePadding()
+    ) {
+        Text("Buat Pengumuman Baru", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Text("Pengumuman akan terlihat oleh semua pengguna", color = TextSecondary, fontSize = 12.sp)
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = title, onValueChange = { title = it },
+            label = { Text("Judul Pengumuman", color = TextSecondary) },
+            modifier = Modifier.fillMaxWidth(),
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                focusedBorderColor = CinemaRed, unfocusedBorderColor = DarkSurfaceVariant, containerColor = DarkCard
+            ),
+            shape = RoundedCornerShape(12.dp), singleLine = true
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        OutlinedTextField(
+            value = body, onValueChange = { body = it },
+            label = { Text("Isi Pengumuman", color = TextSecondary) },
+            modifier = Modifier.fillMaxWidth().height(120.dp),
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                focusedBorderColor = CinemaRed, unfocusedBorderColor = DarkSurfaceVariant, containerColor = DarkCard
+            ),
+            shape = RoundedCornerShape(12.dp), singleLine = false
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = {
+                if (title.isNotBlank() && body.isNotBlank()) {
+                    isPosting = true
+                    val ref = com.google.firebase.database.FirebaseDatabase.getInstance()
+                        .getReference("announcements").push()
+                    ref.setValue(mapOf(
+                        "title" to title, "body" to body,
+                        "author" to "Admin LayarDigi",
+                        "timestamp" to System.currentTimeMillis()
+                    )).addOnCompleteListener {
+                        isPosting = false; title = ""; body = ""
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = CinemaRed),
+            shape = RoundedCornerShape(12.dp),
+            enabled = !isPosting && title.isNotBlank() && body.isNotBlank()
+        ) {
+            if (isPosting) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
+            else Text("Kirim Pengumuman", color = Color.White, fontWeight = FontWeight.Bold)
         }
     }
 }

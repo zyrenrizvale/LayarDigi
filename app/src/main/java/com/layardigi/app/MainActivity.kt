@@ -31,7 +31,8 @@ data class BottomNavItem(
 val bottomNavItems = listOf(
     BottomNavItem(Screen.Home.route, "Beranda", Icons.Rounded.Home),
     BottomNavItem("search_tab", "Cari", Icons.Rounded.Search),
-    BottomNavItem("cinemas_tab", "Bioskop", Icons.Rounded.Theaters),
+    BottomNavItem("my_tickets_tab", "Tiket", Icons.Rounded.ConfirmationNumber),
+    BottomNavItem("favorites_tab", "Favorit", Icons.Rounded.FavoriteBorder, Icons.Rounded.Favorite),
     BottomNavItem("profile_tab", "Profil", Icons.Rounded.Person)
 )
 
@@ -39,7 +40,8 @@ val bottomNavItems = listOf(
 val routesWithBottomNav = setOf(
     Screen.Home.route,
     "search_tab",
-    "cinemas_tab",
+    "my_tickets_tab",
+    "favorites_tab",
     "profile_tab"
 )
 
@@ -66,18 +68,11 @@ class MainActivity : ComponentActivity() {
                             enter = slideInVertically { it } + fadeIn(),
                             exit = slideOutVertically { it } + fadeOut()
                         ) {
-                            LayarDigiBottomNav(
-                                navController = navController,
-                                currentRoute = currentRoute
-                            )
+                            LayarDigiBottomNav(navController = navController, currentRoute = currentRoute)
                         }
                     }
                 ) { paddingValues ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(paddingValues)
-                    ) {
+                    Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
                         NavGraph(navController = navController)
                     }
                 }
@@ -87,28 +82,20 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun LayarDigiBottomNav(
-    navController: NavController,
-    currentRoute: String?
-) {
+fun LayarDigiBottomNav(navController: NavController, currentRoute: String?) {
     NavigationBar(
         containerColor = DarkSurface,
         tonalElevation = 0.dp,
-        modifier = Modifier
-            .fillMaxWidth()
-            .navigationBarsPadding()
+        modifier = Modifier.fillMaxWidth().navigationBarsPadding()
     ) {
         bottomNavItems.forEach { item ->
             val isSelected = currentRoute == item.route
-
             NavigationBarItem(
                 selected = isSelected,
                 onClick = {
                     if (currentRoute != item.route) {
                         navController.navigate(item.route) {
-                            popUpTo(Screen.Home.route) {
-                                saveState = true
-                            }
+                            popUpTo(Screen.Home.route) { saveState = true }
                             launchSingleTop = true
                             restoreState = true
                         }
@@ -121,13 +108,7 @@ fun LayarDigiBottomNav(
                         modifier = Modifier.size(24.dp)
                     )
                 },
-                label = {
-                    Text(
-                        text = item.title,
-                        fontSize = 11.sp,
-                        maxLines = 1
-                    )
-                },
+                label = { Text(text = item.title, fontSize = 11.sp, maxLines = 1) },
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = CinemaRed,
                     selectedTextColor = CinemaRed,
