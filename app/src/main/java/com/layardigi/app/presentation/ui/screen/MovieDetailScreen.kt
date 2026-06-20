@@ -447,6 +447,7 @@ fun FullscreenLandscapePlayer(videoId: String, onClose: () -> Unit) {
         Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
             val playerView = remember(videoId) {
                 YouTubePlayerView(context).apply {
+                    enableAutomaticInitialization = false
                     val options = IFramePlayerOptions.Builder()
                         .controls(0)
                         .autoplay(1)

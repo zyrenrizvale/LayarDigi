@@ -166,6 +166,7 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
                     val context = LocalContext.current
                     val playerView = remember(videoId) {
                         YouTubePlayerView(context).apply {
+                            enableAutomaticInitialization = false
                             val options = IFramePlayerOptions.Builder()
                                 .controls(0)
                                 .autoplay(1)
