@@ -440,204 +440,52 @@ fun FullscreenLandscapePlayer(videoId: String, onClose: () -> Unit) {
             dismissOnClickOutside = false
         )
     ) {
-        var ytPlayer by remember { mutableStateOf<YouTubePlayer?>(null) }
-        var isPlaying by remember { mutableStateOf(true) }
-        var currentSecond by remember { mutableStateOf(0f) }
-        var totalDuration by remember { mutableStateOf(0f) }
-
         Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-            val playerView = remember(videoId) {
-                YouTubePlayerView(context).apply {
-                    enableAutomaticInitialization = false
-                    val options = IFramePlayerOptions.Builder()
-                        .controls(0)
-                        .autoplay(1)
-                        .origin("https://www.youtube.com")
-                        .build()
-                    initialize(object : AbstractYouTubePlayerListener() {
-                        override fun onReady(youTubePlayer: YouTubePlayer) {
-                            ytPlayer = youTubePlayer
-                            youTubePlayer.loadVideo(videoId, 0f)
-                        }
-
-                        override fun onCurrentSecond(youTubePlayer: YouTubePlayer, second: Float) {
-                            currentSecond = second
-                        }
-
-                        override fun onVideoDuration(youTubePlayer: YouTubePlayer, duration: Float) {
-                            totalDuration = duration
-                        }
-
-                        override fun onStateChange(
-                            youTubePlayer: YouTubePlayer,
-                            state: PlayerConstants.PlayerState
-                        ) {
-                            if (state == PlayerConstants.PlayerState.ENDED) {
-                                onClose()
-                            } else if (state == PlayerConstants.PlayerState.PLAYING) {
-                                isPlaying = true
-                            } else if (state == PlayerConstants.PlayerState.PAUSED) {
-                                isPlaying = false
+            AndroidView(
+                factory = { ctx ->
+                    android.webkit.WebView(ctx).apply {
+                        settings.javaScriptEnabled = true
+                        settings.domStorageEnabled = true
+                        settings.mediaPlaybackRequiresUserGesture = false
+                        webViewClient = object : android.webkit.WebViewClient() {
+                            override fun onPageFinished(view: android.webkit.WebView, url: String?) {
+                                super.onPageFinished(view, url)
+                                // Inject CSS to hide YouTube mobile web UI, creating a clean fullscreen player feel
+                                val js = """
+                                    javascript:(function() {
+                                        var style = document.createElement('style');
+                                        style.innerHTML = 'ytm-header-bar, ytm-item-section-renderer, ytm-comment-section-renderer, ytm-companion-ad-renderer, .page-footer, .related-videos { display: none !important; } .player-container { position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; z-index: 9999 !important; background: black !important; } video { object-fit: contain !important; }';
+                                        document.head.appendChild(style);
+                                    })();
+                                """.trimIndent().replace("\n", "")
+                                view.evaluateJavascript(js, null)
                             }
                         }
-                    }, options)
-                }
-            }
-
-            val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
-            DisposableEffect(playerView, lifecycleOwner) {
-                lifecycleOwner.lifecycle.addObserver(playerView)
-                onDispose {
-                    lifecycleOwner.lifecycle.removeObserver(playerView)
-                    playerView.release()
-                }
-            }
-
-            AndroidView(
-                factory = { playerView },
+                        webChromeClient = android.webkit.WebChromeClient()
+                        loadUrl("https://m.youtube.com/watch?v=${videoId}")
+                    }
+                },
+                onRelease = { view ->
+                    view.destroy()
+                },
                 modifier = Modifier.fillMaxSize()
             )
 
-            // Custom Player Overlay
-            var showControls by remember { mutableStateOf(true) }
-            LaunchedEffect(showControls) {
-                if (showControls) {
-                    delay(3000)
-                    showControls = false
-                }
-            }
-
-            Box(
+            // Top Header (Back Button)
+            Row(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .clickable { showControls = !showControls }
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .align(Alignment.TopStart),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                androidx.compose.animation.AnimatedVisibility(
-                    visible = showControls,
-                    enter = androidx.compose.animation.fadeIn(),
-                    exit = androidx.compose.animation.fadeOut()
+                IconButton(
+                    onClick = onClose,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(Color.Black.copy(0.5f), CircleShape)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(0.4f))
-                    ) {
-                        // Top Header (Back Button)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
-                                .align(Alignment.TopStart),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            IconButton(
-                                onClick = onClose,
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .background(Color.Black.copy(0.5f), CircleShape)
-                            ) {
-                                Icon(Icons.Rounded.ArrowBack, contentDescription = "Close", tint = Color.White)
-                            }
-                        }
-
-                        // Center Controls (Prev 10s, Play/Pause, Skip 10s)
-                        Row(
-                            modifier = Modifier.align(Alignment.Center),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(32.dp)
-                        ) {
-                            IconButton(
-                                onClick = { ytPlayer?.seekTo(maxOf(0f, currentSecond - 10f)) },
-                                modifier = Modifier
-                                    .size(56.dp)
-                                    .background(Color.Black.copy(0.5f), CircleShape)
-                            ) {
-                                Icon(Icons.Rounded.FastRewind, contentDescription = "Rewind 10s", tint = Color.White, modifier = Modifier.size(28.dp))
-                            }
-
-                            IconButton(
-                                onClick = {
-                                    if (isPlaying) {
-                                        ytPlayer?.pause()
-                                    } else {
-                                        ytPlayer?.play()
-                                    }
-                                },
-                                modifier = Modifier
-                                    .size(68.dp)
-                                    .background(CinemaRed, CircleShape)
-                            ) {
-                                Icon(
-                                    imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                                    contentDescription = if (isPlaying) "Pause" else "Play",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(36.dp)
-                                )
-                            }
-
-                            IconButton(
-                                onClick = { ytPlayer?.seekTo(minOf(totalDuration, currentSecond + 10f)) },
-                                modifier = Modifier
-                                    .size(56.dp)
-                                    .background(Color.Black.copy(0.5f), CircleShape)
-                            ) {
-                                Icon(Icons.Rounded.FastForward, contentDescription = "Forward 10s", tint = Color.White, modifier = Modifier.size(28.dp))
-                            }
-                        }
-
-                        // Bottom Seekbar (Timeline Slider + Time Stamp)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .align(Alignment.BottomCenter)
-                                .background(
-                                    Brush.verticalGradient(
-                                        listOf(Color.Transparent, Color.Black.copy(0.8f))
-                                    )
-                                )
-                                .padding(horizontal = 24.dp, vertical = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            fun formatTime(seconds: Float): String {
-                                val mins = (seconds / 60).toInt()
-                                val secs = (seconds % 60).toInt()
-                                return String.format("%02d:%02d", mins, secs)
-                            }
-
-                            Text(
-                                text = formatTime(currentSecond),
-                                color = Color.White,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-
-                            Spacer(modifier = Modifier.width(12.dp))
-
-                            Slider(
-                                value = currentSecond,
-                                onValueChange = { seekTime ->
-                                    currentSecond = seekTime
-                                    ytPlayer?.seekTo(seekTime)
-                                },
-                                valueRange = 0f..maxOf(1f, totalDuration),
-                                colors = SliderDefaults.colors(
-                                    thumbColor = CinemaRed,
-                                    activeTrackColor = CinemaRed,
-                                    inactiveTrackColor = Color.White.copy(0.3f)
-                                ),
-                                modifier = Modifier.weight(1f)
-                            )
-
-                            Spacer(modifier = Modifier.width(12.dp))
-
-                            Text(
-                                text = formatTime(totalDuration),
-                                color = Color.White,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
+                    Icon(Icons.Rounded.ArrowBack, contentDescription = "Close", tint = Color.White)
                 }
             }
         }

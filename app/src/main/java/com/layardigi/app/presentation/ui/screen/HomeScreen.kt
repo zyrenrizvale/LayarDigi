@@ -141,12 +141,14 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
 
             var showVideo by remember { mutableStateOf(false) }
             var isVideoFinished by remember { mutableStateOf(false) }
+            var playerState by remember { mutableStateOf(PlayerConstants.PlayerState.UNKNOWN) }
             val videoId = remember(film.trailerUrl) { extractYoutubeVideoId(film.trailerUrl) }
 
             LaunchedEffect(isCurrentPage, videoId) {
                 if (isCurrentPage && videoId != null && videoId.isNotEmpty()) {
                     showVideo = false
                     isVideoFinished = false
+                    playerState = PlayerConstants.PlayerState.UNKNOWN
                     delay(2000)
                     showVideo = true
                 } else {
@@ -159,46 +161,58 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
                 if (isCurrentPage) {
                     isAnyVideoPlaying = showVideo
                 }
+                if (showVideo) {
+                    delay(5000) // Give it 5 seconds to start playing
+                    if (playerState == PlayerConstants.PlayerState.UNKNOWN || playerState == PlayerConstants.PlayerState.UNSTARTED) {
+                        isVideoFinished = true
+                        showVideo = false
+                    }
+                }
             }
 
             Box(modifier = Modifier.fillMaxSize().clickable { onMovieClick(film) }) {
                 if (showVideo && videoId != null && videoId.isNotEmpty()) {
-                    val context = LocalContext.current
-                    val playerView = remember(videoId) {
-                        YouTubePlayerView(context).apply {
-                            enableAutomaticInitialization = false
-                            val options = IFramePlayerOptions.Builder()
-                                .controls(0)
-                                .autoplay(1)
-                                .origin("https://www.youtube.com")
-                                .build()
-                            initialize(object : AbstractYouTubePlayerListener() {
-                                override fun onReady(youTubePlayer: YouTubePlayer) {
-                                    youTubePlayer.loadVideo(videoId, 0f)
-                                }
+                    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+                    AndroidView(
+                        factory = { ctx ->
+                            YouTubePlayerView(ctx).apply {
+                                lifecycleOwner.lifecycle.addObserver(this)
+                                enableAutomaticInitialization = false
+                                val options = IFramePlayerOptions.Builder()
+                                    .controls(0)
+                                    .autoplay(1)
+                                    .origin("https://www.youtube.com")
+                                    .build()
+                                initialize(object : AbstractYouTubePlayerListener() {
+                                    override fun onReady(youTubePlayer: YouTubePlayer) {
+                                        youTubePlayer.loadVideo(videoId, 0f)
+                                    }
 
-                                override fun onStateChange(
-                                    youTubePlayer: YouTubePlayer,
-                                    state: PlayerConstants.PlayerState
-                                ) {
-                                    if (state == PlayerConstants.PlayerState.ENDED) {
+                                    override fun onStateChange(
+                                        youTubePlayer: YouTubePlayer,
+                                        state: PlayerConstants.PlayerState
+                                    ) {
+                                        playerState = state
+                                        if (state == PlayerConstants.PlayerState.ENDED) {
+                                            isVideoFinished = true
+                                            showVideo = false
+                                        }
+                                    }
+
+                                    override fun onError(
+                                        youTubePlayer: YouTubePlayer,
+                                        error: PlayerConstants.PlayerError
+                                    ) {
                                         isVideoFinished = true
                                         showVideo = false
                                     }
-                                }
-                            }, options)
-                        }
-                    }
-                    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
-                    DisposableEffect(playerView, lifecycleOwner) {
-                        lifecycleOwner.lifecycle.addObserver(playerView)
-                        onDispose {
-                            lifecycleOwner.lifecycle.removeObserver(playerView)
-                            playerView.release()
-                        }
-                    }
-                    AndroidView(
-                        factory = { playerView },
+                                }, options)
+                            }
+                        },
+                        onRelease = { view ->
+                            lifecycleOwner.lifecycle.removeObserver(view)
+                            view.release()
+                        },
                         modifier = Modifier.fillMaxSize()
                     )
                     // Touch protection overlay
