@@ -72,6 +72,7 @@ fun MovieDetailScreen(
 
     val movie = uiState.movie ?: return
     val videoId = remember(movie.trailerUrl) { extractYoutubeVideoId(movie.trailerUrl) }
+    val isDirectVideo = videoId == null && movie.trailerUrl.isNotBlank()
     val username by AuthRepository.currentUsername.collectAsState()
     var isFavorite by remember { mutableStateOf(false) }
 
@@ -190,7 +191,7 @@ fun MovieDetailScreen(
             }
 
             // Trailer button if available
-            if (videoId != null && videoId.isNotEmpty()) {
+            if (videoId != null || isDirectVideo) {
                 item {
                     Surface(
                         shape = RoundedCornerShape(14.dp),
@@ -397,8 +398,8 @@ fun MovieDetailScreen(
             }
         }
         
-        if (showTrailerPlayer && videoId != null && videoId.isNotEmpty()) {
-            FullscreenLandscapePlayer(videoId = videoId, onClose = { showTrailerPlayer = false })
+        if (showTrailerPlayer && (videoId != null || isDirectVideo)) {
+            FullscreenLandscapePlayer(videoId = videoId, directUrl = if (isDirectVideo) movie.trailerUrl else null, onClose = { showTrailerPlayer = false })
         }
     }
 }
@@ -421,7 +422,7 @@ fun VerticalDivider() {
 
 
 @Composable
-fun FullscreenLandscapePlayer(videoId: String, onClose: () -> Unit) {
+fun FullscreenLandscapePlayer(videoId: String?, directUrl: String?, onClose: () -> Unit) {
     val context = LocalContext.current
     DisposableEffect(Unit) {
         val activity = context.findActivity()
@@ -443,7 +444,18 @@ fun FullscreenLandscapePlayer(videoId: String, onClose: () -> Unit) {
         Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
             AndroidView(
                 factory = { ctx ->
-                    android.webkit.WebView(ctx).apply {
+                    if (directUrl != null) {
+                        android.widget.VideoView(ctx).apply {
+                            setVideoURI(android.net.Uri.parse(directUrl))
+                            val mediaController = android.widget.MediaController(ctx)
+                            mediaController.setAnchorView(this)
+                            setMediaController(mediaController)
+                            setOnPreparedListener { mp ->
+                                start()
+                            }
+                        }
+                    } else {
+                        android.webkit.WebView(ctx).apply {
                         settings.javaScriptEnabled = true
                         settings.domStorageEnabled = true
                         settings.mediaPlaybackRequiresUserGesture = false
@@ -485,7 +497,11 @@ fun FullscreenLandscapePlayer(videoId: String, onClose: () -> Unit) {
                     }
                 },
                 onRelease = { view ->
-                    view.destroy()
+                    if (view is android.webkit.WebView) {
+                        view.destroy()
+                    } else if (view is android.widget.VideoView) {
+                        view.stopPlayback()
+                    }
                 },
                 modifier = Modifier.fillMaxSize()
             )

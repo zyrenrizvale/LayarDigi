@@ -143,9 +143,10 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
             var isVideoFinished by remember { mutableStateOf(false) }
             var playerState by remember { mutableStateOf(PlayerConstants.PlayerState.UNKNOWN) }
             val videoId = remember(film.trailerUrl) { extractYoutubeVideoId(film.trailerUrl) }
+            val isDirectVideo = videoId == null && film.trailerUrl.isNotBlank()
 
-            LaunchedEffect(isCurrentPage, videoId) {
-                if (isCurrentPage && videoId != null && videoId.isNotEmpty()) {
+            LaunchedEffect(isCurrentPage, videoId, isDirectVideo) {
+                if (isCurrentPage && (videoId != null || isDirectVideo)) {
                     showVideo = false
                     isVideoFinished = false
                     playerState = PlayerConstants.PlayerState.UNKNOWN
@@ -171,11 +172,21 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
             }
 
             Box(modifier = Modifier.fillMaxSize().clickable { onMovieClick(film) }) {
-                if (showVideo && videoId != null && videoId.isNotEmpty()) {
+                if (showVideo && (videoId != null || isDirectVideo)) {
                     val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
                     AndroidView(
                         factory = { ctx ->
-                            android.webkit.WebView(ctx).apply {
+                            if (isDirectVideo) {
+                                android.widget.VideoView(ctx).apply {
+                                    setVideoURI(android.net.Uri.parse(film.trailerUrl))
+                                    setOnPreparedListener { mp ->
+                                        mp.isLooping = true
+                                        mp.setVolume(0f, 0f) // Slideshow must be muted
+                                        start()
+                                    }
+                                }
+                            } else {
+                                android.webkit.WebView(ctx).apply {
                                 settings.javaScriptEnabled = true
                                 settings.domStorageEnabled = true
                                 settings.mediaPlaybackRequiresUserGesture = false
@@ -209,7 +220,11 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
                             }
                         },
                         onRelease = { view ->
-                            view.destroy()
+                            if (view is android.webkit.WebView) {
+                                view.destroy()
+                            } else if (view is android.widget.VideoView) {
+                                view.stopPlayback()
+                            }
                         },
                         modifier = Modifier.fillMaxSize()
                     )
@@ -225,7 +240,7 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
                 ))
 
                 // Replay Overlay Button (appears in top-right after video finishes playing)
-                if (isVideoFinished && !showVideo && videoId != null && videoId.isNotEmpty()) {
+                if (isVideoFinished && !showVideo && (videoId != null || isDirectVideo)) {
                     Surface(
                         shape = RoundedCornerShape(20.dp),
                         color = Color.Black.copy(0.65f),
