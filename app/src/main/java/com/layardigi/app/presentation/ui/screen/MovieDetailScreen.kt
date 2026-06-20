@@ -33,6 +33,7 @@ import com.layardigi.app.data.repository.AuthRepository
 import com.layardigi.app.navigation.Screen
 import com.layardigi.app.presentation.ui.component.CinemaCard
 import com.layardigi.app.presentation.viewmodel.MovieDetailViewModel
+import com.layardigi.app.utils.extractYoutubeVideoId
 import com.layardigi.app.ui.theme.*
 import android.app.Activity
 import android.content.pm.ActivityInfo
@@ -44,7 +45,8 @@ import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.options.IFramePlayerOptions
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.views.YouTubePlayerView
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
+import kotlinx.coroutines.delay
 
 @Composable
 fun MovieDetailScreen(
@@ -67,6 +69,7 @@ fun MovieDetailScreen(
     LaunchedEffect(movieId) { viewModel.loadMovie(movieId) }
 
     val movie = uiState.movie ?: return
+    val videoId = remember(movie.trailerUrl) { extractYoutubeVideoId(movie.trailerUrl) }
     val username by AuthRepository.currentUsername.collectAsState()
     var isFavorite by remember { mutableStateOf(false) }
 
@@ -183,8 +186,7 @@ fun MovieDetailScreen(
             }
 
             // Trailer button if available
-            val videoId = remember(movie.trailerUrl) { extractYoutubeVideoId(movie.trailerUrl) }
-            if (!videoId.isNullOrEmpty()) {
+            if (videoId != null && videoId.isNotEmpty()) {
                 item {
                     var showTrailerPlayer by remember { mutableStateOf(false) }
 
@@ -414,22 +416,7 @@ fun VerticalDivider() {
     Box(modifier = Modifier.width(1.dp).height(40.dp).background(DarkSurfaceVariant))
 }
 
-fun extractYoutubeVideoId(url: String): String? {
-    if (url.isBlank()) return null
-    return try {
-        if (url.contains("v=")) {
-            url.substringAfter("v=").substringBefore("&")
-        } else if (url.contains("youtu.be/")) {
-            url.substringAfter("youtu.be/").substringBefore("?").substringBefore("/")
-        } else if (url.contains("embed/")) {
-            url.substringAfter("embed/").substringBefore("?")
-        } else {
-            url.trim()
-        }
-    } catch (e: java.lang.Exception) {
-        null
-    }
-}
+
 
 @Composable
 fun FullscreenLandscapePlayer(videoId: String, onClose: () -> Unit) {

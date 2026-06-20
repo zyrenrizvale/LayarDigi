@@ -34,6 +34,7 @@ import com.layardigi.app.navigation.Screen
 import com.layardigi.app.presentation.ui.component.MovieCard
 import com.layardigi.app.presentation.ui.component.MovieCardWide
 import com.layardigi.app.presentation.viewmodel.HomeViewModel
+import com.layardigi.app.utils.extractYoutubeVideoId
 import com.layardigi.app.ui.theme.*
 import kotlinx.coroutines.delay
 import androidx.compose.ui.platform.LocalContext
@@ -110,22 +111,7 @@ fun HomeScreen(
     }
 }
 
-fun extractYoutubeVideoId(url: String): String? {
-    if (url.isBlank()) return null
-    return try {
-        if (url.contains("v=")) {
-            url.substringAfter("v=").substringBefore("&")
-        } else if (url.contains("youtu.be/")) {
-            url.substringAfter("youtu.be/").substringBefore("?").substringBefore("/")
-        } else if (url.contains("embed/")) {
-            url.substringAfter("embed/").substringBefore("?")
-        } else {
-            url.trim()
-        }
-    } catch (e: Exception) {
-        null
-    }
-}
+
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -158,7 +144,7 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
             val videoId = remember(film.trailerUrl) { extractYoutubeVideoId(film.trailerUrl) }
 
             LaunchedEffect(isCurrentPage, videoId) {
-                if (isCurrentPage && !videoId.isNullOrEmpty()) {
+                if (isCurrentPage && videoId != null && videoId.isNotEmpty()) {
                     showVideo = false
                     isVideoFinished = false
                     delay(2000)
@@ -176,7 +162,7 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
             }
 
             Box(modifier = Modifier.fillMaxSize().clickable { onMovieClick(film) }) {
-                if (showVideo && !videoId.isNullOrEmpty()) {
+                if (showVideo && videoId != null && videoId.isNotEmpty()) {
                     val context = LocalContext.current
                     val playerView = remember(videoId) {
                         YouTubePlayerView(context).apply {
@@ -222,7 +208,7 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
                 ))
 
                 // Play Overlay Button
-                if (!showVideo && !videoId.isNullOrEmpty()) {
+                if (!showVideo && videoId != null && videoId.isNotEmpty()) {
                     Box(
                         modifier = Modifier
                             .align(Alignment.Center)

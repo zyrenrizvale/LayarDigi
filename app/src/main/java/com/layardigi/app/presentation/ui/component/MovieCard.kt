@@ -38,11 +38,13 @@ fun MovieCard(movie: Movie, onClick: () -> Unit, modifier: Modifier = Modifier) 
         ))
 
         // Badge
+        val isNowShowing = movie.status == "NOW_SHOWING"
+        val isComingSoon = movie.status == "COMING_SOON"
         Box(modifier = Modifier.align(Alignment.TopStart).padding(8.dp)
-            .background(if (movie.isNowShowing) CinemaRed else DarkSurfaceVariant, RoundedCornerShape(6.dp))
+            .background(if (isNowShowing) CinemaRed else if (isComingSoon) CinemaRed.copy(0.2f) else DarkSurfaceVariant, RoundedCornerShape(6.dp))
             .padding(horizontal = 6.dp, vertical = 3.dp)) {
-            Text(if (movie.isNowShowing) "TAYANG" else movie.year.toString(),
-                color = TextPrimary, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
+            Text(if (isNowShowing) "TAYANG" else if (isComingSoon) "SEGERA" else "SELESAI",
+                color = if (isComingSoon) CinemaRed else TextPrimary, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
         }
 
         // Title + rating
@@ -69,7 +71,7 @@ fun MovieCardWide(movie: Movie, onClick: () -> Unit, modifier: Modifier = Modifi
         Box(modifier = Modifier.width(70.dp).height(100.dp).clip(RoundedCornerShape(10.dp))) {
             AsyncImage(model = movie.posterUrl, contentDescription = movie.title,
                 contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-            if (!movie.isNowShowing) {
+            if (movie.status != "NOW_SHOWING") {
                 Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(0.4f)))
             }
         }
@@ -77,10 +79,11 @@ fun MovieCardWide(movie: Movie, onClick: () -> Unit, modifier: Modifier = Modifi
         Spacer(modifier = Modifier.width(14.dp))
 
         Column(modifier = Modifier.weight(1f)) {
-            if (!movie.isNowShowing) {
-                Box(modifier = Modifier.background(DarkSurfaceVariant, RoundedCornerShape(4.dp))
+            if (movie.status != "NOW_SHOWING") {
+                val isComing = movie.status == "COMING_SOON"
+                Box(modifier = Modifier.background(if (isComing) CinemaRed.copy(0.15f) else DarkSurfaceVariant, RoundedCornerShape(4.dp))
                     .padding(horizontal = 6.dp, vertical = 2.dp)) {
-                    Text("TIDAK TAYANG", color = TextSecondary, fontSize = 9.sp,
+                    Text(if (isComing) "AKAN TAYANG" else "TIDAK TAYANG", color = if (isComing) CinemaRed else TextSecondary, fontSize = 9.sp,
                         fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
                 }
                 Spacer(modifier = Modifier.height(4.dp))

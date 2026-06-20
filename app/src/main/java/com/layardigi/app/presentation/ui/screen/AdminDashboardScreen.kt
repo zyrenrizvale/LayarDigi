@@ -187,23 +187,30 @@ fun AdminMovieItem(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Switch(
-                    checked = movie.isNowShowing,
-                    onCheckedChange = { onToggleStatus() },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.White,
-                        checkedTrackColor = CinemaRed,
-                        uncheckedThumbColor = TextSecondary,
-                        uncheckedTrackColor = DarkSurfaceVariant
+                val isNow = movie.status == "NOW_SHOWING"
+                val isComing = movie.status == "COMING_SOON"
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = if (isNow) CinemaRed.copy(0.15f) else if (isComing) CinemaRed.copy(0.2f) else DarkSurfaceVariant,
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        if (isNow) CinemaRed else if (isComing) CinemaRed else TextDisabled
                     ),
-                    modifier = Modifier.scale(0.8f)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
+                    modifier = Modifier.clickable { onToggleStatus() }
+                ) {
+                    Text(
+                        text = if (isNow) "Sedang Tayang" else if (isComing) "Akan Tayang" else "Telah Tayang",
+                        color = if (isNow) CinemaRed else if (isComing) Color.White else TextSecondary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = if (movie.isNowShowing) "Tayang" else "Selesai",
-                    color = if (movie.isNowShowing) CinemaRed else TextSecondary,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium
+                    text = "• Klik untuk ubah",
+                    color = TextDisabled,
+                    fontSize = 11.sp
                 )
             }
         }

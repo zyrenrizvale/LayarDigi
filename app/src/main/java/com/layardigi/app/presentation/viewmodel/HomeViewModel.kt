@@ -16,8 +16,8 @@ data class HomeUiState(
     val filteredMovies: List<Movie> = emptyList(),
     val isSearching: Boolean = false
 ) {
-    val nowShowingMovies: List<Movie> get() = allMovies.filter { it.isNowShowing }
-    val classicMovies: List<Movie> get() = allMovies.filter { !it.isNowShowing }
+    val nowShowingMovies: List<Movie> get() = allMovies.filter { it.status == "NOW_SHOWING" }
+    val classicMovies: List<Movie> get() = allMovies.filter { it.status == "COMING_SOON" }
 }
 
 class HomeViewModel : ViewModel() {
