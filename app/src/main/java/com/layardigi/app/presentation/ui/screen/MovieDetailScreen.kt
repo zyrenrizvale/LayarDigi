@@ -34,6 +34,7 @@ import com.layardigi.app.navigation.Screen
 import com.layardigi.app.presentation.ui.component.CinemaCard
 import com.layardigi.app.presentation.viewmodel.MovieDetailViewModel
 import com.layardigi.app.utils.extractYoutubeVideoId
+import com.layardigi.app.utils.findActivity
 import com.layardigi.app.ui.theme.*
 import android.app.Activity
 import android.content.pm.ActivityInfo
@@ -422,7 +423,7 @@ fun VerticalDivider() {
 fun FullscreenLandscapePlayer(videoId: String, onClose: () -> Unit) {
     val context = LocalContext.current
     DisposableEffect(Unit) {
-        val activity = context as? Activity
+        val activity = context.findActivity()
         val originalOrientation = activity?.requestedOrientation ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
         onDispose {
@@ -480,8 +481,11 @@ fun FullscreenLandscapePlayer(videoId: String, onClose: () -> Unit) {
                 }
             }
 
-            DisposableEffect(playerView) {
+            val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+            DisposableEffect(playerView, lifecycleOwner) {
+                lifecycleOwner.lifecycle.addObserver(playerView)
                 onDispose {
+                    lifecycleOwner.lifecycle.removeObserver(playerView)
                     playerView.release()
                 }
             }

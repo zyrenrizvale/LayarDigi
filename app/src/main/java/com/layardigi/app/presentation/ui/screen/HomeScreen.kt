@@ -187,8 +187,11 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
                             }, options)
                         }
                     }
-                    DisposableEffect(playerView) {
+                    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+                    DisposableEffect(playerView, lifecycleOwner) {
+                        lifecycleOwner.lifecycle.addObserver(playerView)
                         onDispose {
+                            lifecycleOwner.lifecycle.removeObserver(playerView)
                             playerView.release()
                         }
                     }
@@ -207,26 +210,37 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
                     Brush.verticalGradient(listOf(Color.Transparent, DarkBackground.copy(0.5f), DarkBackground.copy(0.97f)))
                 ))
 
-                // Play Overlay Button
-                if (!showVideo && videoId != null && videoId.isNotEmpty()) {
-                    Box(
+                // Replay Overlay Button (appears in top-right after video finishes playing)
+                if (isVideoFinished && !showVideo && videoId != null && videoId.isNotEmpty()) {
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color.Black.copy(0.65f),
                         modifier = Modifier
-                            .align(Alignment.Center)
-                            .size(56.dp)
-                            .clip(CircleShape)
-                            .background(Color.Black.copy(0.6f))
+                            .align(Alignment.TopEnd)
+                            .padding(16.dp)
                             .clickable {
                                 isVideoFinished = false
                                 showVideo = true
-                            },
-                        contentAlignment = Alignment.Center
+                            }
                     ) {
-                        Icon(
-                            imageVector = if (isVideoFinished) Icons.Rounded.Replay else Icons.Rounded.PlayArrow,
-                            contentDescription = if (isVideoFinished) "Play Again" else "Play Trailer",
-                            tint = Color.White,
-                            modifier = Modifier.size(32.dp)
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Replay,
+                                contentDescription = "Putar Lagi",
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Putar Lagi",
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
 
