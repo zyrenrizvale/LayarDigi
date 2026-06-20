@@ -26,18 +26,36 @@ import com.layardigi.app.navigation.Screen
 import com.layardigi.app.presentation.ui.component.MovieCardWide
 import com.layardigi.app.ui.theme.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(navController: NavController) {
     var query by remember { mutableStateOf("") }
+    var selectedFilter by remember { mutableStateOf("Semua") }
     val allMovies by MovieRepository.moviesFlow.collectAsState()
-    val results = remember(query, allMovies) {
-        if (query.length >= 2)
-            allMovies.filter {
+    
+    val filters = listOf("Semua", "Sedang Tayang", "Akan Tayang", "Telah Tayang")
+    
+    val results = remember(query, allMovies, selectedFilter) {
+        var filtered = allMovies
+        
+        // Apply Category Filter
+        filtered = when (selectedFilter) {
+            "Sedang Tayang" -> filtered.filter { it.status == "NOW_SHOWING" }
+            "Akan Tayang" -> filtered.filter { it.status == "COMING_SOON" }
+            "Telah Tayang" -> filtered.filter { it.status == "ARCHIVED" } // Placeholder status for older movies
+            else -> filtered
+        }
+        
+        // Apply Text Search Filter
+        if (query.isNotBlank()) {
+            filtered = filtered.filter {
                 it.title.contains(query, ignoreCase = true) ||
                 it.genre.any { g -> g.contains(query, ignoreCase = true) } ||
                 it.director.contains(query, ignoreCase = true)
             }
-        else emptyList()
+        }
+        
+        filtered
     }
 
     Column(
@@ -47,7 +65,7 @@ fun SearchScreen(navController: NavController) {
             .statusBarsPadding()
             .imePadding()
     ) {
-        // Search bar only - no header text
+        // Search bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -68,7 +86,7 @@ fun SearchScreen(navController: NavController) {
                 cursorBrush = SolidColor(CinemaRed),
                 singleLine = true,
                 decorationBox = { inner ->
-                    if (query.isEmpty()) Text("Judul, genre, sutradara...", color = TextDisabled, fontSize = 15.sp)
+                    if (query.isEmpty()) Text("Cari judul, genre, sutradara...", color = TextDisabled, fontSize = 15.sp)
                     inner()
                 }
             )
@@ -77,22 +95,39 @@ fun SearchScreen(navController: NavController) {
                     tint = TextSecondary, modifier = Modifier.size(20.dp).clickable { query = "" })
             }
         }
+        
+        // Filter Chips
+        androidx.compose.foundation.lazy.LazyRow(
+            contentPadding = PaddingValues(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(bottom = 12.dp)
+        ) {
+            items(filters) { filter ->
+                val isSelected = selectedFilter == filter
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(if (isSelected) CinemaRed else DarkSurfaceVariant)
+                        .clickable { selectedFilter = filter }
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = filter,
+                        color = if (isSelected) Color.White else TextSecondary,
+                        fontSize = 13.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                    )
+                }
+            }
+        }
 
-        if (query.length >= 2 && results.isEmpty()) {
+        if (results.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Rounded.SearchOff, contentDescription = null, tint = TextDisabled, modifier = Modifier.size(64.dp))
                     Spacer(modifier = Modifier.height(12.dp))
                     Text("Tidak ditemukan", color = TextSecondary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                    Text("Coba kata kunci lain", color = TextDisabled, fontSize = 13.sp)
-                }
-            }
-        } else if (query.length < 2) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Rounded.MovieFilter, contentDescription = null, tint = TextDisabled, modifier = Modifier.size(64.dp))
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text("Ketik minimal 2 huruf", color = TextSecondary, fontSize = 15.sp, textAlign = TextAlign.Center)
+                    Text("Coba kata kunci atau filter lain", color = TextDisabled, fontSize = 13.sp)
                 }
             }
         } else {

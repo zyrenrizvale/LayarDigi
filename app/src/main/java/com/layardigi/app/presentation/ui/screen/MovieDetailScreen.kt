@@ -442,20 +442,30 @@ fun FullscreenLandscapePlayer(videoId: String?, directUrl: String?, onClose: () 
         AndroidView(
             factory = { ctx ->
                 if (directUrl != null) {
-                    android.widget.VideoView(ctx).apply {
-                        setVideoURI(android.net.Uri.parse(directUrl))
-                        val mediaController = android.widget.MediaController(ctx)
-                        mediaController.setAnchorView(this)
-                        setMediaController(mediaController)
+                    android.webkit.WebView(ctx).apply {
+                        settings.javaScriptEnabled = true
+                        settings.mediaPlaybackRequiresUserGesture = false
+                        webChromeClient = android.webkit.WebChromeClient()
                         layoutParams = android.widget.FrameLayout.LayoutParams(
                             android.view.ViewGroup.LayoutParams.MATCH_PARENT,
                             android.view.ViewGroup.LayoutParams.MATCH_PARENT
-                        ).apply {
-                            gravity = android.view.Gravity.CENTER
-                        }
-                        setOnPreparedListener { mp ->
-                            start()
-                        }
+                        )
+                        val html = """
+                            <!DOCTYPE html>
+                            <html>
+                            <head>
+                                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+                                <style>
+                                    body, html { margin: 0; padding: 0; background-color: black; height: 100vh; width: 100vw; overflow: hidden; }
+                                    video { width: 100%; height: 100%; object-fit: contain; }
+                                </style>
+                            </head>
+                            <body>
+                                <video src="$directUrl" controls autoplay playsinline></video>
+                            </body>
+                            </html>
+                        """.trimIndent()
+                        loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
                     }
                 } else {
                     android.webkit.WebView(ctx).apply {

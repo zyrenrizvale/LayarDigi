@@ -37,6 +37,7 @@ import com.layardigi.app.presentation.viewmodel.HomeViewModel
 import com.layardigi.app.utils.extractYoutubeVideoId
 import com.layardigi.app.ui.theme.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
@@ -98,14 +99,37 @@ fun HomeScreen(
                 }
             }
 
-            // Semua Film
-            item { SectionHeader(title = "Semua Film", subtitle = "Koleksi lengkap LayarDigi") }
-            items(uiState.classicMovies) { movie ->
-                MovieCardWide(
-                    movie = movie,
-                    onClick = { navController.navigate(Screen.MovieDetail.createRoute(movie.id)) },
-                    modifier = Modifier.padding(horizontal = 20.dp).padding(bottom = 12.dp)
-                )
+            // Promo & Iklan
+            item { SectionHeader(title = "Promo Spesial", subtitle = "Penawaran menarik untukmu") }
+            item {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(3) { index ->
+                        Box(
+                            modifier = Modifier
+                                .width(280.dp)
+                                .height(140.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(DarkCard)
+                        ) {
+                            AsyncImage(
+                                model = "https://picsum.photos/seed/promo${index}/600/300",
+                                contentDescription = "Promo",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                            Box(modifier = Modifier.fillMaxSize().background(
+                                Brush.horizontalGradient(listOf(Color.Black.copy(0.8f), Color.Transparent))
+                            ))
+                            Column(modifier = Modifier.padding(16.dp).align(Alignment.BottomStart)) {
+                                Text("Diskon ${index * 10 + 20}%", color = CinemaRed, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                Text("Paket Nonton Berdua", color = Color.White, fontSize = 14.sp)
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -158,6 +182,14 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
                 }
             }
 
+            val coroutineScope = rememberCoroutineScope()
+            val onVideoFinished = {
+                coroutineScope.launch {
+                    val nextPage = (pagerState.currentPage + 1) % movies.size
+                    pagerState.animateScrollToPage(nextPage)
+                }
+            }
+
             LaunchedEffect(showVideo) {
                 if (isCurrentPage) {
                     isAnyVideoPlaying = showVideo
@@ -173,9 +205,11 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
                                 android.widget.VideoView(ctx).apply {
                                     setVideoURI(android.net.Uri.parse(film.trailerUrl))
                                     setOnPreparedListener { mp ->
-                                        mp.isLooping = true
-                                        mp.setVolume(0f, 0f) // Slideshow must be muted
+                                        // Sound is now unmuted by default
                                         start()
+                                    }
+                                    setOnCompletionListener {
+                                        onVideoFinished()
                                     }
                                 }
                             } else {
@@ -183,6 +217,12 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
                                 settings.javaScriptEnabled = true
                                 settings.domStorageEnabled = true
                                 settings.mediaPlaybackRequiresUserGesture = false
+                                addJavascriptInterface(object {
+                                    @android.webkit.JavascriptInterface
+                                    fun onVideoEnd() {
+                                        onVideoFinished()
+                                    }
+                                }, "Android")
                                 webViewClient = object : android.webkit.WebViewClient() {
                                     override fun onPageFinished(view: android.webkit.WebView, url: String?) {
                                         super.onPageFinished(view, url)
@@ -196,8 +236,11 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
                                                 var playAttempt = setInterval(function() {
                                                     var video = document.querySelector('video');
                                                     if (video) {
-                                                        video.muted = true; // Slideshow must be muted
-                                                        video.loop = true; // Make it loop indefinitely
+                                                        video.muted = false; // Slideshow unmuted
+                                                        video.loop = false; // Do not loop, advance when finished
+                                                        video.onended = function() {
+                                                            Android.onVideoEnd();
+                                                        };
                                                         video.play();
                                                         if (!video.paused) {
                                                             clearInterval(playAttempt);
