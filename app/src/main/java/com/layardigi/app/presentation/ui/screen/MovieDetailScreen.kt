@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -189,7 +190,7 @@ fun MovieDetailScreen(
             // Trailer button if available
             if (videoId != null && videoId.isNotEmpty()) {
                 item {
-                    var showTrailerPlayer by remember { mutableStateOf(false) }
+                    var showTrailerPlayer by rememberSaveable { mutableStateOf(false) }
 
                     Surface(
                         shape = RoundedCornerShape(14.dp),
@@ -451,6 +452,7 @@ fun FullscreenLandscapePlayer(videoId: String, onClose: () -> Unit) {
                     val options = IFramePlayerOptions.Builder()
                         .controls(0)
                         .autoplay(1)
+                        .origin("https://www.youtube.com")
                         .build()
                     initialize(object : AbstractYouTubePlayerListener() {
                         override fun onReady(youTubePlayer: YouTubePlayer) {

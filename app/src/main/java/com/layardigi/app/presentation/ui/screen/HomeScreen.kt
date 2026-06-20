@@ -170,6 +170,7 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
                             val options = IFramePlayerOptions.Builder()
                                 .controls(0)
                                 .autoplay(1)
+                                .origin("https://www.youtube.com")
                                 .build()
                             initialize(object : AbstractYouTubePlayerListener() {
                                 override fun onReady(youTubePlayer: YouTubePlayer) {
