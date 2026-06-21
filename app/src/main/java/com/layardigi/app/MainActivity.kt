@@ -31,6 +31,12 @@ import com.layardigi.app.navigation.NavGraph
 import com.layardigi.app.navigation.Screen
 import com.layardigi.app.ui.theme.*
 import kotlinx.coroutines.flow.MutableSharedFlow
+import coil.ImageLoader
+import coil.disk.DiskCache
+import coil.memory.MemoryCache
+import okhttp3.CacheControl
+import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
 
 data class BottomNavItem(
     val route: String,
@@ -48,12 +54,8 @@ val bottomNavItems = listOf(
 )
 
 // Routes yang MENAMPILKAN bottom nav
-val routesWithBottomNav = setOf(
-    Screen.Home.route,
-    "search_tab",
-    "my_tickets_tab",
-    "favorites_tab",
-    "profile_tab"
+val routesWithBottomNav = listOf(
+    Screen.Home.route, "search_tab", "my_tickets_tab", "favorites_tab", "profile_tab"
 )
 
 class MainActivity : ComponentActivity() {
@@ -61,6 +63,40 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Force aggressive caching for all images (especially from Google Drive)
+        // This prevents re-downloading HD posters and saves data quota!
+        val imageLoader = ImageLoader.Builder(this)
+            .memoryCache {
+                MemoryCache.Builder(this)
+                    .maxSizePercent(0.25)
+                    .build()
+            }
+            .diskCache {
+                DiskCache.Builder()
+                    .directory(this.cacheDir.resolve("image_cache"))
+                    .maxSizePercent(0.10) // 10% of available disk space
+                    .build()
+            }
+            .okHttpClient {
+                OkHttpClient.Builder()
+                    .addNetworkInterceptor { chain ->
+                        val response = chain.proceed(chain.request())
+                        // Force cache for 7 days, ignoring server's "no-cache" headers
+                        val cacheControl = CacheControl.Builder()
+                            .maxAge(7, TimeUnit.DAYS)
+                            .build()
+                        response.newBuilder()
+                            .header("Cache-Control", cacheControl.toString())
+                            .removeHeader("Pragma")
+                            .build()
+                    }
+                    .build()
+            }
+            .build()
+        coil.Coil.setImageLoader(imageLoader)
+
+        enableEdgeToEdge()
 
         // Request notification permission if API level is 33+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

@@ -202,15 +202,31 @@ fun HeroBanner(movies: List<Movie>, onMovieClick: (Movie) -> Unit) {
                     AndroidView(
                         factory = { ctx ->
                             if (isDirectVideo) {
-                                android.widget.VideoView(ctx).apply {
-                                    setVideoURI(android.net.Uri.parse(film.trailerUrl))
-                                    setOnPreparedListener { mp ->
-                                        // Sound is now unmuted by default
-                                        start()
-                                    }
-                                    setOnCompletionListener {
-                                        onVideoFinished()
-                                    }
+                                android.webkit.WebView(ctx).apply {
+                                    settings.javaScriptEnabled = true
+                                    settings.mediaPlaybackRequiresUserGesture = false
+                                    addJavascriptInterface(object {
+                                        @android.webkit.JavascriptInterface
+                                        fun onVideoEnd() {
+                                            onVideoFinished()
+                                        }
+                                    }, "Android")
+                                    val html = """
+                                        <!DOCTYPE html>
+                                        <html>
+                                        <head>
+                                            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+                                            <style>
+                                                body, html { margin: 0; padding: 0; background-color: transparent; height: 100vh; width: 100vw; overflow: hidden; }
+                                                video { width: 100%; height: 100%; object-fit: cover; }
+                                            </style>
+                                        </head>
+                                        <body>
+                                            <video src="${film.trailerUrl}" autoplay playsinline onended="Android.onVideoEnd()"></video>
+                                        </body>
+                                        </html>
+                                    """.trimIndent()
+                                    loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
                                 }
                             } else {
                                 android.webkit.WebView(ctx).apply {
